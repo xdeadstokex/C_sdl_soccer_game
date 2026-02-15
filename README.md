@@ -1,12 +1,20 @@
 # C_sdl_soccer_game
 
+DEPENDENCY
+```txt
+gcc:        (find it yourself in window, mingw32 is normally used)
+SDL2:        https://github.com/libsdl-org/SDL/releases/tag/release-2.32.10
+SDL2_MIXER:  https://github.com/libsdl-org/SDL_mixer/releases/tag/release-2.8.1
+SDL2_IMAGE:  https://github.com/libsdl-org/SDL_image/releases/tag/release-2.8.8
+```
+
 HOW TO COMPILE IN WINDOW
 ```txt
 WINDOWS (MinGW/GCC)
 -------------------
 1. Download SDL2, SDL2_image, SDL2_mixer development libraries (MinGW version)
 2. Extract to a folder (e.g., C:\SDL2)
-3. Set paths and compile:
+3. Set paths and compile: (check the correct path of your own machine)
 
 SET SDL2_PATH=C:\SDL2\SDL2-2.x.x\x86_64-w64-mingw32
 SET SDL2_IMAGE_PATH=C:\SDL2\SDL2_image-2.x.x\x86_64-w64-mingw32
