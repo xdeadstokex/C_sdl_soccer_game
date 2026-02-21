@@ -23,9 +23,9 @@ sound_data
 
 img_data
 
-cpu_window_data
+struct cpu_window_data
 
-internal_data (internal use)
+struct internal_data (internal use)
 
 
 
@@ -48,7 +48,7 @@ get_time()
 get_time_sec()
 wait(unsigned int millisec)
 wait_sec(double sec)
-
+cap_fps(double fps)
 
 SOUND FUNCTIONS
 ---------------
@@ -59,6 +59,12 @@ stop_sound(sound_data* sound)
 set_sound_volume(sound_data* sound, int vol)
 free_sound(sound_data* sound)
 
+
+SHAPE DRAWING
+-------------
+draw_line(struct cpu_window_data* window, int x0, int y0, int x1, int y1, int color)
+draw_rect(struct cpu_window_data* window, int x, int y, int w, int h, int color)
+draw_rect_centered(struct cpu_window_data* window, int x, int y, int w, int h, int color)
 
 IMAGE LOADING
 -------------
@@ -97,6 +103,7 @@ NOTES
 - Sound volume range: 0-128
 - Sound types auto-detected: .mp3/.ogg/.flac = music, others = effects
 - Renderer uses hardware acceleration
+- color is hex 32 bit 0xFFAA11FF ( 0x (hex) FF (red) AA (green) 11 (blue) FF (alpha) )
 */
 
 
@@ -112,6 +119,16 @@ int w;
 int h;
 SDL_Texture* data;  // Changed to texture
 } img_data;
+
+
+typedef struct {
+double time;
+double last_time;
+double next_time;
+double tagret_delta;
+double delta;
+int is_time;
+} clock_data;
 
 
 struct cpu_window_data{
@@ -383,13 +400,25 @@ return 1;
 return 1;
 }
 
-
-int get_time(){
+/*
+double get_time(){
 return SDL_GetTicks();
 }
 
 double get_time_sec(){
 return (double)(SDL_GetTicks()) / 1000;
+}
+*/
+
+static inline double get_time_sec(){
+static Uint64 freq = 0;
+if(freq == 0){ freq = SDL_GetPerformanceFrequency(); }
+return (double)SDL_GetPerformanceCounter() / freq;
+}
+
+
+static inline double get_time(){
+return get_time_sec() * 1000.0;  // milliseconds
 }
 
 
@@ -403,7 +432,66 @@ SDL_Delay(sec * 1000);
 return;
 }
 
+void reset_clock(clock_data* clock, double tagret_delta){
+clock->time = 0;
+clock->last_time = 0;
+clock->next_time = 0;
+clock->tagret_delta = 0;
+clock->delta = 0;
+clock->is_time = 0;
+return;
+}
 
+
+void update_clock(clock_data* clock){
+clock->is_time = 0;
+double last_time = clock->time;
+clock->time = get_time_sec();
+
+if(clock->next_time == 0){
+clock->next_time = clock->time + clock->tagret_delta;
+}
+
+if(clock->time >= clock->next_time){
+clock->is_time = 1;
+clock->next_time += clock->tagret_delta - (clock->next_time - clock->time);
+}
+
+clock->delta = clock->time - clock->last_time;
+clock->last_time = last_time;
+return;
+}
+
+double cap_fps(double fps){
+static double next_frame_time_sec = 0;
+double target_frame_time = 1.0 / fps;
+double current_time = get_time_sec();
+
+if (next_frame_time_sec == 0){
+next_frame_time_sec = current_time;
+}
+
+
+double sleep_time = next_frame_time_sec - current_time;
+if (sleep_time > 0){
+wait_sec(sleep_time);
+/*
+for(;;){
+double time = get_time_sec();
+if(next_frame_time_sec - time <= 0){
+next_frame_time_sec = get_time_sec();
+break;
+}
+}
+*/
+next_frame_time_sec = get_time_sec();
+}
+
+next_frame_time_sec += target_frame_time;  // Preserve cadence
+
+
+return 1.0 / ((double)(get_time_sec()) - current_time);
+}
 
 
 
@@ -509,6 +597,19 @@ return;
 }
 
 
+static inline double get_physic_y_cor(double window_h, double y){
+return window_h - y - 1; // -1 bcs sdl mouse pos base on pixel cor
+}
+
+
+void draw_line(struct cpu_window_data* window, int x0, int y0, int x1, int y1, int color){
+struct internal_data* internal = (struct internal_data*) window->data;
+SDL_SetRenderDrawColor(internal->sdl_renderer, color >> 24, color >> 16, color >> 8, color);
+SDL_RenderDrawLine(internal->sdl_renderer, x0, y0, x1, y1);
+return;
+}
+
+
 
 void draw_rect(struct cpu_window_data* window, int x, int y, int w, int h, int color){
 struct internal_data* internal = (struct internal_data*) window->data;
@@ -521,6 +622,14 @@ void draw_rect_centered(struct cpu_window_data* window, int x, int y, int w, int
 struct internal_data* internal = (struct internal_data*) window->data;
 SDL_SetRenderDrawColor(internal->sdl_renderer, color >> 24, color >> 16, color >> 8, color);
 SDL_RenderFillRect(internal->sdl_renderer, &(SDL_Rect){x - w / 2, y - h / 2, w, h});
+return;
+}
+
+
+void draw_rect_bottom_left(struct cpu_window_data* window, int x, int y, int w, int h, int color){
+struct internal_data* internal = (struct internal_data*) window->data;
+SDL_SetRenderDrawColor(internal->sdl_renderer, color >> 24, color >> 16, color >> 8, color);
+SDL_RenderFillRect(internal->sdl_renderer, &(SDL_Rect){x, get_physic_y_cor(window->h, y + h), w, h});
 return;
 }
 
