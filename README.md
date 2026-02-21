@@ -1,4 +1,30 @@
 # C_sdl_soccer_game
+DES
+```txt
+-------- DES --------
+a simple soccer game forced to make by uni (damn uni)
+2 mode:
+pvp (top selection)
+pve (bottom selection)
+
+each team consist of 4 players: 3 attacker and 1 goalie
+currently only have wind as external impact
+
+-------- CONTROL --------
+p1:
+move: wasd
+kick (hold): space
+change teammate: tab
+
+p2:
+move: arrow key
+kick (hold): n
+change teammate: m
+
+
+
+```
+
 
 DEPENDENCY
 ```txt
