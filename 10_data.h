@@ -3,6 +3,15 @@
 
 #include "external_lib/sdl2_wrapper.h"
 #include "external_lib/io_logic.h"
+#include <SDL_mixer.h>
+//###############################################
+//####             SOUND DATA                ####
+//###############################################
+
+Mix_Music *bgm_menu = NULL;
+Mix_Music *bgm_match = NULL;
+Mix_Chunk *sfx_goal = NULL;
+Mix_Chunk *sfx_kick = NULL;
 
 //###############################################
 //####             SYSTEM DATA               ####

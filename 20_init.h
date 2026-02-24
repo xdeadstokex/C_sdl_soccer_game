@@ -5,6 +5,8 @@
 #include <math.h>
 #include "10_data.h"
 
+
+
 static void set_footballer(int i, double x, double y, double r,
                             double angle, int team, int goalie, int active){
     footballers[i].x        = x;
@@ -28,7 +30,19 @@ int init(){
     double fh = window.h;
     double PI = 3.14159265358979;
     double r  = 14.0;
+    //sound
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+        printf("SDL_mixer Error: %s\n", Mix_GetError());
+    }
 
+    // 2. Load các file nhạc (Đảm bảo file tồn tại trong thư mục assets)
+    bgm_menu  = Mix_LoadMUS("assets/menu_theme.mp3");
+    bgm_match = Mix_LoadMUS("assets/match_theme.mp3");
+    sfx_goal  = Mix_LoadWAV("assets/goal_sound.mp3");
+    sfx_kick  = Mix_LoadWAV("assets/kick.mp3");
+
+    // 3. Phát nhạc menu ngay lập tức
+    if (bgm_menu) Mix_PlayMusic(bgm_menu, -1); 
     // Red team (faces right = angle 0)
     set_footballer(0, fw*0.30, fh*0.35, r,   0, 0, 0, 1); // field 1 (active)
     set_footballer(1, fw*0.25, fh*0.65, r,   0, 0, 0, 0); // field 2

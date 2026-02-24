@@ -49,11 +49,25 @@ void process(){
                     game_mode = MODE_PVA;
                     reset_positions();
                     printf("Mode: Player vs AI\n");
+                    // Dừng nhạc menu ngay lập tức
+                    Mix_HaltMusic(); 
+
+                    // Phát nhạc trận đấu với hiệu ứng to dần trong 2000ms (2 giây)
+                    if (bgm_match != NULL) {
+                        Mix_FadeInMusic(bgm_match, -1, 2000); 
+}
                 }
                 if(my > menu_pvp_y() && my < menu_pvp_y() + MENU_BTN_H){
                     game_mode = MODE_PVP;
                     reset_positions();
                     printf("Mode: Player vs Player\n");
+                    // Dừng nhạc menu ngay lập tức
+                    Mix_HaltMusic(); 
+
+                    // Phát nhạc trận đấu với hiệu ứng to dần trong 2000ms (2 giây)
+                    if (bgm_match != NULL) {
+                        Mix_FadeInMusic(bgm_match, -1, 2000); 
+                    }
                 }
             }
         }
@@ -66,7 +80,15 @@ void process(){
     if(esc_clicked){
         game_mode = MODE_MENU;
         reset_positions();
+
+
+        Mix_HaltMusic(); 
+        if (bgm_menu != NULL) {
+            Mix_PlayMusic(bgm_menu, -1); // Quay lại nhạc menu
+        }
         return;
+
+
     }
     if(mouse.left.click){
         int mx = mouse.x, my = mouse.y;
@@ -74,6 +96,10 @@ void process(){
            my > BACK_BTN_Y && my < BACK_BTN_Y + BACK_BTN_H){
             game_mode = MODE_MENU;
             reset_positions();
+            Mix_HaltMusic(); 
+            if (bgm_menu != NULL) {
+                Mix_PlayMusic(bgm_menu, -1); // Quay lại nhạc menu
+            }
             return;
         }
     }
@@ -157,11 +183,17 @@ void process(){
     if(goal == 1){
         game.score_red++;
         printf("RED SCORES! %d - %d\n", game.score_red, game.score_blue);
+        if (sfx_goal != NULL) {
+            Mix_PlayChannel(-1, (Mix_Chunk*)sfx_goal, 0);
+        }
         game.goal_cooldown = 150;
         reset_positions();
     } else if(goal == 2){
         game.score_blue++;
         printf("BLUE SCORES! %d - %d\n", game.score_red, game.score_blue);
+        if (sfx_goal != NULL) {
+            Mix_PlayChannel(-1, (Mix_Chunk*)sfx_goal, 0);
+        }
         game.goal_cooldown = 150;
         reset_positions();
     }
