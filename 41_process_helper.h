@@ -398,6 +398,7 @@ void ai_footballer(int idx, double dt){
     struct footballer_data* f = &footballers[idx];
 
     // Goal references
+    //goal center
     double enemy_gx, enemy_gy, own_gx, own_gy;
     if(f->team == 1){ // blue attacks left goal
         enemy_gx = goals[0].x + goals[0].w/2.0; enemy_gy = goals[0].y + goals[0].h/2.0;
@@ -410,10 +411,66 @@ void ai_footballer(int idx, double dt){
     double target_x, target_y;
 
     if(f->is_goalie){
-        // Patrol along own goal mouth, tracking ball vertically
-        double offset = (f->team == 0) ? 40.0 : -40.0;
-        target_x = own_gx + offset;
-        target_y = ball.y;
+        //khoảng cách bóng --> giữa gôn
+        double b_dx = ball.x - own_gx; //khoảng cách x
+        double b_dy = ball.y - own_gy; //khoảng cách y
+        double dist = sqrt(b_dx*b_dx + b_dy*b_dy);
+
+        //kiểm tra kẻ địch sau lưng
+        int lurking_enemy = 0;
+            double enemy_x = 0, enemy_y = 0;
+            for(int i = 0; i < NUM_FOOTBALLERS; i++){
+                if (footballers[i].team != f->team && ball.owner != i){
+                    double edx = footballers[i].x - own_gx;
+                    double edy = footballers[i].y - own_gy;
+                    double edist = sqrt(edx*edx + edy*edy);
+                    
+                    //địch gần gôn khác cánh với bóng
+                    if(edist < goalie_zones[f->team].r * 1.5 && (b_dy * edy < 0)){
+                        lurking_enemy = 1;
+                        enemy_x = footballers[i].x;
+                        enemy_y = footballers[i].y;
+                        break;
+                    }
+                }
+            }
+
+        double THREAD = window.w * 0.4;
+
+        //bóng ở xa
+        if ((dist > THREAD) || (dist < THREAD && !lurking_enemy)){
+            int i = (f->team == 0) ? 0 : 1;
+            double r = goalie_zones[i].r - f->r;
+            double dir_x = b_dx / dist;
+            double dir_y = b_dy / dist;
+            
+            target_x = own_gx + dir_x * r;
+            target_y = own_gy + dir_y * r;
+        }
+        else{
+            //có địch và bóng tạo với biên ngang góc nhỏ --> đứng sát cột dọc 
+            if(lurking_enemy && fabs(b_dx) > 70.0) {
+                double offset_x = (f->team == 0) ? (goals[f->team].h/2 + f->r) : -(goals[f->team].h/2 + f->r);
+                target_x = own_gx + offset_x;
+                double offset_y = (b_dy > 0) ? (goals[f->team].w/2) : -(goals[f->team].w/2); 
+                target_y = own_gy + offset_y;
+                
+            } else {
+                //không có địch phía sau --> chủ động dân lên khép góc
+                double aggro = 1.0 - (dist / THREAD);
+                if (aggro < 0.2) aggro = 0.2; 
+                
+                double dir_x = b_dx / dist;
+                double dir_y = b_dy / dist;
+                
+                int zi = (f->team == 0) ? 0 : 1;
+                double push_out = goalie_zones[zi].r * aggro * 0.8; 
+                
+                target_x = own_gx + dir_x * push_out;
+                target_y = own_gy + dir_y * push_out;
+            }
+        }
+
         // Clamp target to inside zone so AI doesn't overshoot boundary
         int     zi   = (f->team == 0) ? 0 : 1;
         double  tz_r = goalie_zones[zi].r - f->r;
@@ -423,6 +480,15 @@ void ai_footballer(int idx, double dt){
         double  tdy  = target_y - tcy;
         double  td   = sqrt(tdx*tdx + tdy*tdy);
         if(td > tz_r){ target_x = tcx + tdx/td*tz_r; target_y = tcy + tdy/td*tz_r; }
+        double safe_limit = f->r + 2.0;
+        
+        if (f->team == 0 && target_x < tcx + safe_limit) {
+            target_x = tcx + safe_limit;
+        }
+        if (f->team == 1 && target_x > tcx - safe_limit) {
+            target_x = tcx - safe_limit;
+        }
+        
     } else {
         // Role within team: red uses idx 0,1,2 ; blue uses idx-4 = 0,1,2
         int role = (f->team == 0) ? idx : idx - 4;
