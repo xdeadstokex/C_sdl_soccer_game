@@ -30,16 +30,18 @@ int init(){
     double r  = 14.0;
 
     // Red team (faces right = angle 0)
-    set_footballer(0, fw*0.30, fh*0.35, r,   0, 0, 0, 1); // field 1 (active)
+    set_footballer(0, fw*0.30, fh*0.35, r,   0, 0, 0, 1); // field 1 
     set_footballer(1, fw*0.25, fh*0.65, r,   0, 0, 0, 0); // field 2
-    set_footballer(2, fw*0.18, fh*0.50, r,   0, 0, 0, 0); // field 3 (def mid)
-    set_footballer(3, fw*0.05, fh*0.50, r,   0, 0, 1, 0); // goalie
+    set_footballer(2, fw*0.18, fh*0.25, r,   0, 0, 0, 0); // field 3 
+    set_footballer(3, fw*0.15, fh*0.50, r,   0, 0, 0, 0); // field 4 
+    set_footballer(4, fw*0.05, fh*0.50, r,   0, 0, 1, 0); // goalie
 
     // Blue team (faces left = angle PI)
-    set_footballer(4, fw*0.70, fh*0.65, r,  PI, 1, 0, 1); // field 1 (active)
-    set_footballer(5, fw*0.75, fh*0.35, r,  PI, 1, 0, 0); // field 2
-    set_footballer(6, fw*0.82, fh*0.50, r,  PI, 1, 0, 0); // field 3 (def mid)
-    set_footballer(7, fw*0.95, fh*0.50, r,  PI, 1, 1, 0); // goalie
+    set_footballer(5, fw*0.70, fh*0.65, r,  PI, 1, 0, 1); // field 1 
+    set_footballer(6, fw*0.75, fh*0.35, r,  PI, 1, 0, 0); // field 2
+    set_footballer(7, fw*0.82, fh*0.75, r,  PI, 1, 0, 0); // field 3 
+    set_footballer(8, fw*0.85, fh*0.50, r,  PI, 1, 0, 0); // field 4 
+    set_footballer(9, fw*0.95, fh*0.50, r,  PI, 1, 1, 0); // goalie
 
     // Ball
     ball.x = fw*0.5; ball.y = fh*0.5;
@@ -75,7 +77,7 @@ int init(){
 
     // Control state
     team0_active = 0;
-    team1_active = 4;
+    team1_active = 5; 
     for(int i = 0; i < NUM_FOOTBALLERS; i++){
         kick_charge[i] = 0;
         kick_timer[i]  = 0;
@@ -89,21 +91,26 @@ void reset_positions(){
     double PI = 3.14159265358979;
     double r  = 14.0;
 
-    set_footballer(0, fw*0.30, fh*0.35, r,   0, 0, 0, 1);
-    set_footballer(1, fw*0.25, fh*0.65, r,   0, 0, 0, 0);
-    set_footballer(2, fw*0.18, fh*0.50, r,   0, 0, 0, 0);
-    set_footballer(3, fw*0.05, fh*0.50, r,   0, 0, 1, 0);
-    set_footballer(4, fw*0.70, fh*0.65, r,  PI, 1, 0, 1);
-    set_footballer(5, fw*0.75, fh*0.35, r,  PI, 1, 0, 0);
-    set_footballer(6, fw*0.82, fh*0.50, r,  PI, 1, 0, 0);
-    set_footballer(7, fw*0.95, fh*0.50, r,  PI, 1, 1, 0);
+    // Red team (faces right = angle 0)
+    set_footballer(0, fw*0.30, fh*0.35, r,   0, 0, 0, 1); // field 1 
+    set_footballer(1, fw*0.25, fh*0.65, r,   0, 0, 0, 0); // field 2
+    set_footballer(2, fw*0.18, fh*0.25, r,   0, 0, 0, 0); // field 3 
+    set_footballer(3, fw*0.15, fh*0.50, r,   0, 0, 0, 0); // field 4 
+    set_footballer(4, fw*0.05, fh*0.50, r,   0, 0, 1, 0); // goalie
+
+    // Blue team (faces left = angle PI)
+    set_footballer(5, fw*0.70, fh*0.65, r,  PI, 1, 0, 1); // field 1 
+    set_footballer(6, fw*0.75, fh*0.35, r,  PI, 1, 0, 0); // field 2
+    set_footballer(7, fw*0.82, fh*0.75, r,  PI, 1, 0, 0); // field 3 
+    set_footballer(8, fw*0.85, fh*0.50, r,  PI, 1, 0, 0); // field 4 
+    set_footballer(9, fw*0.95, fh*0.50, r,  PI, 1, 1, 0); // goalie
 
     ball.x = fw*0.5; ball.y = fh*0.5;
     ball.vx = 0; ball.vy = 0; ball.owner = -1;
 
     // Reset active selections to defaults
     team0_active = 0;
-    team1_active = 4;
+    team1_active = 5;
 
     for(int i = 0; i < NUM_FOOTBALLERS; i++){
         kick_charge[i] = 0;

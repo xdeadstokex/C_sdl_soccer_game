@@ -72,11 +72,11 @@ typedef enum { MODE_MENU = 0, MODE_PVA = 1, MODE_PVP = 2 } game_mode_t;
 game_mode_t game_mode;
 
 // Layout:
-//   Red  team: 0,1,2 = field players   |  3 = goalie
-//   Blue team: 4,5,6 = field players   |  7 = goalie
-#define NUM_FOOTBALLERS  8
-#define RED_GOALIE_IDX   3
-#define BLUE_GOALIE_IDX  7
+//   Red  team: 0,1,2,3 = field players   |  4 = goalie
+//   Blue team: 5,6,7,8 = field players   |  9 = goalie
+#define NUM_FOOTBALLERS  10
+#define RED_GOALIE_IDX   4
+#define BLUE_GOALIE_IDX  9
 
 struct footballer_data   footballers[NUM_FOOTBALLERS];
 struct ball_data         ball;

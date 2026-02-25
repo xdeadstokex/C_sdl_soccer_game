@@ -392,7 +392,7 @@ void handle_human(int idx,
 // -------------------------------------------------------
 // AI
 // -------------------------------------------------------
-static double ai_kick_timer[NUM_FOOTBALLERS] = {0,0,0,0,0,0,0,0};
+static double ai_kick_timer[NUM_FOOTBALLERS] = {0,0,0,0,0,0,0,0,0,0};
 
 void ai_footballer(int idx, double dt){
     struct footballer_data* f = &footballers[idx];
@@ -456,7 +456,7 @@ void ai_footballer(int idx, double dt){
                 target_y = own_gy + offset_y;
                 
             } else {
-                //không có địch phía sau --> chủ động dân lên khép góc
+                //không có địch phía sau --> chủ động dâng lên khép góc
                 double aggro = 1.0 - (dist / THREAD);
                 if (aggro < 0.2) aggro = 0.2; 
                 
@@ -490,21 +490,23 @@ void ai_footballer(int idx, double dt){
         }
         
     } else {
-        // Role within team: red uses idx 0,1,2 ; blue uses idx-4 = 0,1,2
-        int role = (f->team == 0) ? idx : idx - 4;
+        // Cập nhật công thức trừ index của đội Blue
+        int role = (f->team == 0) ? idx : idx - 5; 
+        
         if(ball.owner >= 0 && footballers[ball.owner].team == f->team){
-            // Teammate has ball: make a support run
-            double spread = (role == 0) ? -80.0 : 80.0;
+            // Support run: phân bổ 4 cầu thủ tản ra các hướng khác nhau
+            double spread = (role == 0) ? -80.0 : (role == 1) ? 80.0 : (role == 2) ? -130.0 : 130.0;
             target_x = (ball.x + enemy_gx) * 0.5;
             target_y = ball.y + spread;
         } else {
-            // Chase ball with slight spread to avoid stacking
-            double spread = (role == 0) ? -40.0 : (role == 1) ? 40.0 : 0.0;
+            // Chase ball: tránh bị chồng chéo
+            double spread = (role == 0) ? -40.0 : (role == 1) ? 40.0 : (role == 2) ? -90.0 : 90.0;
             target_x = ball.x;
             target_y = ball.y + spread;
         }
-        // Defensive mid (role 2) stays back in own half
-        if(role == 2){
+        
+        // Defensive mid: Ép cả role 3 lùi về sân nhà phòng ngự
+        if(role == 2 || role == 3){
             double mid = window.w * 0.5;
             if(f->team == 0 && target_x > mid) target_x = mid;
             if(f->team == 1 && target_x < mid) target_x = mid;

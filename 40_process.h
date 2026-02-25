@@ -102,7 +102,8 @@ void process(){
     // --------------------------------------------------
     {
         int idx  = team0_active;
-        int next = (idx == 0) ? 1 : (idx == 1) ? 2 : 0;
+        // Thêm role 3 vào vòng lặp next
+        int next = (idx == 0) ? 1 : (idx == 1) ? 2 : (idx == 2) ? 3 : 0;
         handle_human(idx,
             window.key_a, window.key_d,
             window.key_w, window.key_s,
@@ -110,8 +111,8 @@ void process(){
             tab_clicked,
             &team0_active, next,
             dt);
-        // Non-active red field players
-        for(int i = 0; i <= 2; i++)
+        // Non-active red field players (từ 0 đến 3)
+        for(int i = 0; i <= 3; i++)
             if(i != team0_active) ai_footballer(i, dt);
         // Red goalie always AI
         ai_footballer(RED_GOALIE_IDX, dt);
@@ -124,7 +125,8 @@ void process(){
     // --------------------------------------------------
     if(game_mode == MODE_PVP){
         int idx  = team1_active;
-        int next = (idx == 4) ? 5 : (idx == 5) ? 6 : 4;
+        // Logic next cho index 5, 6, 7, 8
+        int next = (idx == 5) ? 6 : (idx == 6) ? 7 : (idx == 7) ? 8 : 5;
         handle_human(idx,
             window.key_arrow_left, window.key_arrow_right,
             window.key_arrow_up,   window.key_arrow_down,
@@ -132,11 +134,12 @@ void process(){
             m_clicked,
             &team1_active, next,
             dt);
-        for(int i = 4; i <= 6; i++)
+        
+        for(int i = 5; i <= 8; i++)
             if(i != team1_active) ai_footballer(i, dt);
         ai_footballer(BLUE_GOALIE_IDX, dt);
     } else {
-        for(int i = 4; i < NUM_FOOTBALLERS; i++) ai_footballer(i, dt);
+        for(int i = 5; i < NUM_FOOTBALLERS; i++) ai_footballer(i, dt);
     }
 
     // --------------------------------------------------
