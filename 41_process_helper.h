@@ -489,27 +489,98 @@ void ai_footballer(int idx, double dt){
             target_x = tcx - safe_limit;
         }
         
-    } else {
-        // Cập nhật công thức trừ index của đội Blue
-        int role = (f->team == 0) ? idx : idx - 5; 
-        
-        if(ball.owner >= 0 && footballers[ball.owner].team == f->team){
-            // Support run: phân bổ 4 cầu thủ tản ra các hướng khác nhau
-            double spread = (role == 0) ? -80.0 : (role == 1) ? 80.0 : (role == 2) ? -130.0 : 130.0;
-            target_x = (ball.x + enemy_gx) * 0.5;
-            target_y = ball.y + spread;
-        } else {
-            // Chase ball: tránh bị chồng chéo
-            double spread = (role == 0) ? -40.0 : (role == 1) ? 40.0 : (role == 2) ? -90.0 : 90.0;
-            target_x = ball.x;
-            target_y = ball.y + spread;
-        }
-        
-        // Defensive mid: Ép cả role 3 lùi về sân nhà phòng ngự
-        if(role == 2 || role == 3){
-            double mid = window.w * 0.5;
-            if(f->team == 0 && target_x > mid) target_x = mid;
-            if(f->team == 1 && target_x < mid) target_x = mid;
+    } 
+    else{
+        //kiểm tra trạng thái
+        int is_attacking = (ball.owner >= 0 && footballers[ball.owner].team == f->team);
+        if (is_attacking){
+            //TẤN CÔNG
+            if (ball.owner == idx){ //người cầm bóng
+                target_x = enemy_gx; 
+                target_y = enemy_gy;
+            } 
+            else{
+                int my_index = (f->team == 0) ? idx : (idx - 5); //index trong đội hình
+                int ball_owner_index = (f->team == 0) ? ball.owner : (ball.owner - 5);
+                //đếm vị trí cầu thủ
+                int relative_role = 0;
+                for(int i = 0; i < 4; i++){
+                    if (i == ball_owner_index) continue; //bỏ qua thằng cầm bóng
+                    if (i == my_index) break; //đếm tới vị trí hiện tại thì bỏ qua
+                    relative_role++;
+                }
+
+                if (relative_role == 0){ //tiền đạo
+                    target_x = ball.x + ((f->team == 0) ? 80.0 : -80.0);
+                    target_y = own_gy;
+                } 
+                else if (relative_role == 1){ //chạy cánh
+                    target_x = ball.x + ((f->team == 0) ? 40.0 : -40.0);
+                    
+                    // Nếu bóng ở nửa trên màn hình -> Cầu thủ chạy xuống biên dưới, và ngược lại
+                    if (ball.y < window.h / 2.0){
+                        target_y = window.h - 100.0; 
+                    } 
+                    else{
+                        target_y = 100.0;
+                    }
+                } 
+                else if (relative_role == 2){ //tuyến 2
+                    target_x = ball.x - ((f->team == 0) ? 250.0 : -250.0);
+                    target_y = (own_gy + ball.y) / 2.0;
+                }
+                
+                //tránh chạy vượt qua biên ngang
+                double offside_line = enemy_gx + ((f->team == 0) ? -50.0 : 50.0);
+                if (f->team == 0 && target_x > offside_line) target_x = offside_line;
+                if (f->team == 1 && target_x < offside_line) target_x = offside_line;
+            }
+        } 
+        else{
+            //PHÒNG NGỰ
+            double this_dx = f->x - ball.x;
+            double this_dy = f->y - ball.y;
+            double this_dist = sqrt(this_dx*this_dx + this_dy*this_dy);
+            int rank = 0;
+
+            int start_idx = (f->team == 0) ? 0 : 5;
+            int end_idx = (f->team == 0) ? 3 : 8; 
+
+            for(int i = start_idx; i <= end_idx; i++){
+                if (i == idx) continue;
+                double other_dx = footballers[i].x - ball.x;
+                double other_dy = footballers[i].y - ball.y;
+                double other_dist = sqrt(other_dx*other_dx + other_dy*other_dy);
+
+                if(other_dist < this_dist || (other_dist == this_dist && i < idx)){
+                    rank++;
+                }
+            }
+
+            if (rank == 0){ //cướp lại bóng
+                target_x = ball.x;
+                target_y = ball.y;
+            } 
+            else{
+                double drop_x = own_gx + ((f->team == 0) ? 250.0 : -250.0); 
+                
+                if (rank == 1){ 
+                    target_x = drop_x + ((f->team == 0) ? 80.0 : -80.0); 
+                    target_y = own_gy - 130.0;
+                } 
+                else if (rank == 2){ 
+                    target_x = drop_x + ((f->team == 0) ? 80.0 : -80.0);
+                    target_y = own_gy + 130.0;
+                } 
+                else{ 
+                    target_x = drop_x;
+                    target_y = own_gy;
+                }
+                
+                double mid = window.w * 0.5;
+                if(f->team == 0 && target_x < ball.x - 200.0) target_x = ball.x - 200.0; 
+                if(f->team == 1 && target_x > ball.x + 200.0) target_x = ball.x + 200.0;
+            }
         }
     }
 
