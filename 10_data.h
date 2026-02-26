@@ -95,7 +95,19 @@ int team1_active;
 double kick_charge[NUM_FOOTBALLERS];  // 0..1, charge builds while holding kick key
 double kick_timer[NUM_FOOTBALLERS];   // cooldown seconds remaining
 
+// PNG
+SDL_Texture* tex_pva_raw = NULL;
+SDL_Texture* tex_pva_hover = NULL;
+SDL_Texture* tex_pvp_raw = NULL;
+SDL_Texture* tex_pvp_hover = NULL;
+SDL_Texture* mu = NULL;
+SDL_Texture* mc = NULL;
 
+//sound
+Mix_Music *bgm_menu = NULL;
+Mix_Music *bgm_match = NULL;
+Mix_Chunk *sfx_goal = NULL;
+Mix_Chunk *sfx_kick = NULL;
 
 // Menu button screen coords — single source of truth used by both process and render
 #define MENU_BTN_CX      600   // will be overwritten to window.w/2 at runtime but fine as default

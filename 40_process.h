@@ -49,11 +49,21 @@ void process(){
                     game_mode = MODE_PVA;
                     reset_positions();
                     printf("Mode: Player vs AI\n");
+
+                    Mix_HaltMusic(); 
+                    if (bgm_match != NULL) {
+                        Mix_FadeInMusic(bgm_match, -1, 2000); 
+                    }
                 }
                 if(my > menu_pvp_y() && my < menu_pvp_y() + MENU_BTN_H){
                     game_mode = MODE_PVP;
                     reset_positions();
                     printf("Mode: Player vs Player\n");
+
+                    Mix_HaltMusic(); 
+                    if (bgm_match != NULL) {
+                        Mix_FadeInMusic(bgm_match, -1, 2000); 
+                    }
                 }
             }
         }
@@ -160,11 +170,17 @@ void process(){
     if(goal == 1){
         game.score_red++;
         printf("RED SCORES! %d - %d\n", game.score_red, game.score_blue);
+        if (sfx_goal != NULL) {
+            Mix_PlayChannel(-1, (Mix_Chunk*)sfx_goal, 0);
+        }
         game.goal_cooldown = 150;
         reset_positions();
     } else if(goal == 2){
         game.score_blue++;
         printf("BLUE SCORES! %d - %d\n", game.score_red, game.score_blue);
+        if (sfx_goal != NULL) {
+            Mix_PlayChannel(-1, (Mix_Chunk*)sfx_goal, 0);
+        }
         game.goal_cooldown = 150;
         reset_positions();
     }
