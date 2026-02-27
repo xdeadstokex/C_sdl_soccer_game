@@ -397,8 +397,52 @@ void handle_human(int idx,
 // -------------------------------------------------------
 static double ai_kick_timer[NUM_FOOTBALLERS] = {0,0,0,0,0,0,0,0,0,0};
 
+//hàm check đường ống từ ax, ay tới bx, by có bị đối thủ ở ex, ey chặn ko
+static inline int is_pass_blocked(double ax, double ay, double bx, double by, 
+                                  double ex, double ey, double intercept_radius) {
+    //vector ab
+    double abx = bx - ax;
+    double aby = by - ay;
+    //vector ae
+    double aex = ex - ax;
+    double aey = ey - ay;
+
+    double dot = aex * abx + aey * aby; //tính ae . ab (chiếu ae lên ab)
+    double ab_len_sq = abx * abx + aby * aby; //tính ab . ab (chiếu ab lên ab)
+
+    if (ab_len_sq == 0) return 0; //a và b trùng nhau --> tránh chia cho 0
+
+    double t = dot / ab_len_sq;
+
+    //gom về 0-->1 bỏ đi các điểm nằm ngoài đoạn ab
+    if (t < 0.0) t = 0.0;
+    if (t > 1.0) t = 1.0;
+
+    //điểm c thuộc ab gần e nhất
+    double cx = ax + t * abx;
+    double cy = ay + t * aby;
+
+    //tính ce
+    double dx = ex - cx;
+    double dy = ey - cy;
+    
+    //so sánh với khoảng cách cắt bóng
+    return (sqrt(dx * dx + dy * dy) < intercept_radius);
+}
+
 void ai_footballer(int idx, double dt){
     struct footballer_data* f = &footballers[idx];
+
+    static int team_possession = -1;
+    if (ball.owner >= 0) {
+        team_possession = footballers[ball.owner].team;
+    }
+
+    //thủ môn có bóng --> phất lên
+    if (f->is_goalie && ball.owner == idx) {
+        f->angle_rad = (f->team == 0) ? 0.0 : PH_PI; 
+        kick_ball(idx, 1.0); // Sút với lực MAX
+        return;
 
     // Goal references
     //goal center
@@ -603,12 +647,75 @@ void ai_footballer(int idx, double dt){
         clamp_goalie_zone(f, (f->team == 0) ? 0 : 1);
 
     // Kick when ball owned: aim at enemy goal and fire
-    if(ball.owner == idx){
-        f->angle_rad = atan2(enemy_gy - f->y, enemy_gx - f->x);
-        ai_kick_timer[idx] -= dt;
-        if(ai_kick_timer[idx] <= 0){
-            kick_ball(idx, 0.6 + ((double)rand()/RAND_MAX)*0.4);
-            ai_kick_timer[idx] = KICK_COOLDOWN + 0.05;
+    if (ball.owner == idx) {
+        ai_kick_timer[idx] -= dt;//thời gian ra quyết định
+        
+        //kiểm tra góc sút
+        double dist_to_goal = sqrt(pow(enemy_gx - f->x, 2) + pow(enemy_gy - f->y, 2));
+        int can_shoot = (dist_to_goal < 2 * goalie_zones[f->team].r);//tính khoảng cách có thể sút
+        
+        if (can_shoot && ai_kick_timer[idx] <= 0) {
+            f->angle_rad = atan2(enemy_gy - f->y, enemy_gx - f->x); //tính góc sút
+            kick_ball(idx, 0.8 + ((double)rand()/RAND_MAX)*0.2); //sút
+            ai_kick_timer[idx] = KICK_COOLDOWN + 0.2;
+        } 
+        else if (ai_kick_timer[idx] <= 0) {
+            //tìm người để chuyền
+            int best_teammate = -1;
+            double best_score = -999.0;
+            
+            int start_idx = (f->team == 0) ? 0 : 5;
+            int end_idx   = (f->team == 0) ? 3 : 8;
+            
+            //chấm điểm đồng đội theo độ thoáng
+            for (int i = start_idx; i <= end_idx; i++) {
+                if (i == idx) continue;
+                struct footballer_data* receiver = &footballers[i];
+                
+                //ai gần goal hơn
+                double dist_teammate_goal = sqrt(pow(enemy_gx - receiver->x, 2) + pow(enemy_gy - receiver->y, 2));
+                double score = 1000.0 - dist_teammate_goal; 
+                
+                double dist_to_receiver = sqrt(pow(receiver->x - f->x, 2) + pow(receiver->y - f->y, 2));//khoảng cách đến đồng đội
+                if (dist_to_receiver > 500.0) score -= 500.0;
+                
+                //xét có cầu thủ chặn đường ko
+                int is_blocked = 0;
+                for (int e = 0; e < NUM_FOOTBALLERS; e++) {
+                    if (footballers[e].team != f->team){
+                        double intercept_radius = footballers[e].r + 25;
+                        if (is_pass_blocked(f->x, f->y, receiver->x, receiver->y, footballers[e].x, footballers[e].y, intercept_radius)){
+                            is_blocked = 1;
+                            break;
+                        }
+                    }
+                }
+                if (is_blocked) score -= 2000.0; //bị trừ điểm khi có địch ở giữa
+                
+                if (score > best_score) {
+                    best_score = score;
+                    best_teammate = i;
+                }
+            }
+            
+            //truyền đón đầu
+            if (best_teammate != -1 && best_score > 0) {
+                struct footballer_data* receiver = &footballers[best_teammate];
+                double dist = sqrt(pow(receiver->x - f->x, 2) + pow(receiver->y - f->y, 2));
+                
+                // Giả định vận tốc quả bóng bay khi chuyền là khoảng 600 px/s
+                double pass_speed = 600.0; 
+                double time_to_reach = dist / pass_speed;
+                
+                // Tọa độ tương lai
+                double lead_x = receiver->x + receiver->vx * time_to_reach;
+                double lead_y = receiver->y + receiver->vy * time_to_reach;
+                
+                // Nhắm vào tọa độ tương lai và vung chân!
+                f->angle_rad = atan2(lead_y - f->y, lead_x - f->x);
+                kick_ball(idx, 0.4); // Lực chuyền (Charge 0.4)
+                ai_kick_timer[idx] = KICK_COOLDOWN + 0.5; // Chờ 1 chút để không spam chuyền
+            }
         }
     }
 }
