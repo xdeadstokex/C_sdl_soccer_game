@@ -328,9 +328,8 @@ void kick_ball(int idx, double charge){
     ball.y  = f->y + sin(f->angle_rad) * (f->r + ball.r + 6.0);
     kick_timer[idx]  = KICK_COOLDOWN;
     kick_charge[idx] = 0;
-    if (sfx_kick != NULL) {
-        Mix_PlayChannel(-1, (Mix_Chunk*)sfx_kick, 0);
-    }
+
+	play_sound(&sfx_kick);
 }
 
 

@@ -87,7 +87,7 @@ struct wind_data         wind;
 struct dust_particle     dust[MAX_DUST];
 
 // Currently human-selected index per team.
-// Red  cycles 0->1->2->0  (TAB)
+// Red  cycles 0->1->2->0  (SHIFT)
 // Blue cycles 4->5->6->4  (M)
 int team0_active;
 int team1_active;
@@ -104,10 +104,10 @@ img_data mu;
 img_data mc;
 
 //sound
-Mix_Music *bgm_menu = NULL;
-Mix_Music *bgm_match = NULL;
-Mix_Chunk *sfx_goal = NULL;
-Mix_Chunk *sfx_kick = NULL;
+sound_data bgm_menu;
+sound_data bgm_match;
+sound_data sfx_goal;
+sound_data sfx_kick;
 
 // Menu button screen coords — single source of truth used by both process and render
 #define MENU_BTN_CX      600   // will be overwritten to window.w/2 at runtime but fine as default

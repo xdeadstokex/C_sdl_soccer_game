@@ -40,20 +40,16 @@ void process(){
                     reset_positions();
                     printf("Mode: Player vs AI\n");
 
-                    Mix_HaltMusic(); 
-                    if (bgm_match != NULL) {
-                        Mix_FadeInMusic(bgm_match, -1, 2000); 
-                    }
+					stop_sound(&bgm_menu);
+					play_sound_loop(&bgm_match);
                 }
                 if(my > menu_pvp_y() && my < menu_pvp_y() + MENU_BTN_H){
                     game_mode = MODE_PVP;
                     reset_positions();
                     printf("Mode: Player vs Player\n");
 
-                    Mix_HaltMusic(); 
-                    if (bgm_match != NULL) {
-                        Mix_FadeInMusic(bgm_match, -1, 2000); 
-                    }
+					stop_sound(&bgm_menu);
+					play_sound_loop(&bgm_match);
                 }
             }
         }
@@ -63,21 +59,16 @@ void process(){
     // --------------------------------------------------
     // BACK TO MENU: ESC or click back button
     // --------------------------------------------------
-    if(kb.key_escape.click){
+	int return_menu = 0;
+    if(kb.key_escape.click){ return_menu = 1; }
+	if( check_point_in_box_2d(mouse.x, mouse.y, BACK_BTN_X, BACK_BTN_Y, BACK_BTN_W, BACK_BTN_H) && mouse.left.click){ return_menu = 1; }
+    if(return_menu){
         game_mode = MODE_MENU;
         reset_positions();
+		stop_sound(&bgm_match);
+		play_sound_loop(&bgm_menu);
         return;
     }
-    if(mouse.left.click){
-        int mx = mouse.x, my = mouse.y;
-        if(mx > BACK_BTN_X && mx < BACK_BTN_X + BACK_BTN_W &&
-           my > BACK_BTN_Y && my < BACK_BTN_Y + BACK_BTN_H){
-            game_mode = MODE_MENU;
-            reset_positions();
-            return;
-        }
-    }
-
     // --------------------------------------------------
     // GOAL FREEZE
     // --------------------------------------------------
@@ -149,19 +140,18 @@ void process(){
     if(goal == 1){
         game.score_red++;
         printf("RED SCORES! %d - %d\n", game.score_red, game.score_blue);
-        if (sfx_goal != NULL) {
-            Mix_PlayChannel(-1, (Mix_Chunk*)sfx_goal, 0);
-        }
         game.goal_cooldown = 150;
         reset_positions();
-    } else if(goal == 2){
+
+		play_sound(&sfx_goal);
+    }
+	else if(goal == 2){
         game.score_blue++;
         printf("BLUE SCORES! %d - %d\n", game.score_red, game.score_blue);
-        if (sfx_goal != NULL) {
-            Mix_PlayChannel(-1, (Mix_Chunk*)sfx_goal, 0);
-        }
         game.goal_cooldown = 150;
         reset_positions();
+		
+	play_sound(&sfx_goal);
     }
 }
 
