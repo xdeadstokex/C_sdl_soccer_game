@@ -92,15 +92,12 @@ int init(){
     }
 
 
-
-    struct internal_data* back = (struct internal_data*)window.data;
-
-    tex_pva_raw   = IMG_LoadTexture(back->sdl_renderer, "assets/pvaraw.png");
-    tex_pva_hover = IMG_LoadTexture(back->sdl_renderer, "assets/pva.png");
-    tex_pvp_raw   = IMG_LoadTexture(back->sdl_renderer, "assets/pvpraw.png");
-    tex_pvp_hover = IMG_LoadTexture(back->sdl_renderer, "assets/pvp.png");
-    mu = IMG_LoadTexture(back->sdl_renderer, "assets/mu.png");
-    mc = IMG_LoadTexture(back->sdl_renderer, "assets/mc.png");
+	load_img(&window, &tex_pva_raw, "assets/pvaraw.png");
+	load_img(&window, &tex_pva_hover, "assets/pva.png");	
+	load_img(&window, &tex_pvp_raw, "assets/pvpraw.png");
+	load_img(&window, &tex_pvp_hover, "assets/pvp.png");
+	load_img(&window, &mu, "assets/mu.png");
+	load_img(&window, &mc, "assets/mc.png");
     return 1;
 }
 

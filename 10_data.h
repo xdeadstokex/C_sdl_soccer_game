@@ -96,12 +96,12 @@ double kick_charge[NUM_FOOTBALLERS];  // 0..1, charge builds while holding kick 
 double kick_timer[NUM_FOOTBALLERS];   // cooldown seconds remaining
 
 // PNG
-SDL_Texture* tex_pva_raw = NULL;
-SDL_Texture* tex_pva_hover = NULL;
-SDL_Texture* tex_pvp_raw = NULL;
-SDL_Texture* tex_pvp_hover = NULL;
-SDL_Texture* mu = NULL;
-SDL_Texture* mc = NULL;
+img_data tex_pva_raw;
+img_data tex_pva_hover;
+img_data tex_pvp_raw;
+img_data tex_pvp_hover;
+img_data mu;
+img_data mc;
 
 //sound
 Mix_Music *bgm_menu = NULL;
