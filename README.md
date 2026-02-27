@@ -14,7 +14,7 @@ currently only have wind as external impact
 p1:
 move: wasd
 kick (hold): space
-change teammate: tab
+change teammate: left shift
 
 p2:
 move: arrow key

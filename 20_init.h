@@ -21,6 +21,7 @@ static void set_footballer(int i, double x, double y, double r,
 }
 
 int init(){
+	init_graphic_lib();
     init_window(&window, 1200, 700, "Shaolin Soccer");
     game_mode = MODE_MENU;
 
@@ -29,14 +30,6 @@ int init(){
     double PI = 3.14159265358979;
     double r  = 14.0;
 
-    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
-        printf("SDL_mixer Error: %s\n", Mix_GetError());
-    }
-    bgm_menu  = Mix_LoadMUS("assets/menu_theme.mp3");
-    bgm_match = Mix_LoadMUS("assets/match_theme.mp3");
-    sfx_goal  = Mix_LoadWAV("assets/goal_sound.mp3");
-    sfx_kick  = Mix_LoadWAV("assets/kick.mp3");
-    if (bgm_menu) Mix_PlayMusic(bgm_menu, -1); 
     // Red team (faces right = angle 0)
     set_footballer(0, fw*0.30, fh*0.35, r,   0, 0, 0, 1); // field 1 
     set_footballer(1, fw*0.25, fh*0.65, r,   0, 0, 0, 0); // field 2
@@ -92,15 +85,21 @@ int init(){
     }
 
 
+	load_img(&window, &tex_pva_raw, "assets/pvaraw.png");
+	load_img(&window, &tex_pva_hover, "assets/pva.png");	
+	load_img(&window, &tex_pvp_raw, "assets/pvpraw.png");
+	load_img(&window, &tex_pvp_hover, "assets/pvp.png");
+	load_img(&window, &mu, "assets/mu.png");
+	load_img(&window, &mc, "assets/mc.png");
+	
+	
 
-    struct internal_data* back = (struct internal_data*)window.data;
+	load_sound(&bgm_menu, "assets/menu_theme.mp3");
+	load_sound(&bgm_match, "assets/match_theme.mp3");
+	load_sound(&sfx_goal, "assets/goal_sound.mp3");
+	load_sound(&sfx_kick, "assets/kick.mp3");
 
-    tex_pva_raw   = IMG_LoadTexture(back->sdl_renderer, "assets/pvaraw.png");
-    tex_pva_hover = IMG_LoadTexture(back->sdl_renderer, "assets/pva.png");
-    tex_pvp_raw   = IMG_LoadTexture(back->sdl_renderer, "assets/pvpraw.png");
-    tex_pvp_hover = IMG_LoadTexture(back->sdl_renderer, "assets/pvp.png");
-    mu = IMG_LoadTexture(back->sdl_renderer, "assets/mu.png");
-    mc = IMG_LoadTexture(back->sdl_renderer, "assets/mc.png");
+	play_sound_loop(&bgm_menu);
     return 1;
 }
 

@@ -271,7 +271,6 @@ void draw_back_button(){
 void draw_menu(){
     // Dim overlay over field
     //draw_rect(&window, 0, 0, window.w, window.h, 0x00000099);
-    struct internal_data* back = (struct internal_data*)window.data;
     int cx  = window.w / 2;
     int bx  = menu_btn_x_r();
     int bw  = MENU_BTN_W;
@@ -281,35 +280,23 @@ void draw_menu(){
     int mx = mouse.x;
     int my = mouse.y;
     int logo_size = 200;
-    // Title (coloured block pattern — no font needed)
-    SDL_Rect rect_pva = { bx, pva_y, bw, bh };
-    if(mx > bx && mx < bx + bw && my > pva_y && my < pva_y + bh) {
-        SDL_RenderCopy(back->sdl_renderer, tex_pva_hover, NULL, &rect_pva);
-    } else {
-        SDL_RenderCopy(back->sdl_renderer, tex_pva_raw, NULL, &rect_pva);
+
+	if( check_point_in_box_2d(mouse.x, mouse.y, bx, pva_y, bw, bh) ){
+		draw_img(&window, &tex_pva_hover,  bx, pva_y);
+    }
+	else {
+		draw_img(&window, &tex_pva_raw,  bx, pva_y);
     }
 
-    // --- Nút PvP ---
-    SDL_Rect rect_pvp = { bx, pvp_y, bw, bh };
-    if(mx > bx && mx < bx + bw && my > pvp_y && my < pvp_y + bh) {
-        SDL_RenderCopy(back->sdl_renderer, tex_pvp_hover, NULL, &rect_pvp);
-    } else {
-        SDL_RenderCopy(back->sdl_renderer, tex_pvp_raw, NULL, &rect_pvp);
+	if( check_point_in_box_2d(mouse.x, mouse.y, bx, pvp_y, bw, bh) ){
+		draw_img(&window, &tex_pvp_hover,  bx, pvp_y);
+    }
+	else{
+		draw_img(&window, &tex_pvp_raw,  bx, pvp_y);
     }
 
-    SDL_Rect rect_mu = { 300 - logo_size/2, 350 - logo_size/2, logo_size, logo_size };
-    SDL_RenderCopy(back->sdl_renderer, mu, NULL, &rect_mu);
-
-
-    SDL_Rect rect_mc = { 900 - logo_size/2, 350 - logo_size/2, logo_size, logo_size };
-    SDL_RenderCopy(back->sdl_renderer, mc, NULL, &rect_mc);
-    // // Hover highlights
-    // if(mx > bx && mx < bx + bw){
-    //     if(my > pva_y && my < pva_y + bh)
-    //         draw_rect(&window, bx, pva_y, bw, bh, 0xFFFFFF22);
-    //     if(my > pvp_y && my < pvp_y + bh)
-    //         draw_rect(&window, bx, pvp_y, bw, bh, 0xFFFFFF22);
-    // }
+	draw_img(&window, &mu,  150 - logo_size/2, 350 - logo_size/2);
+	draw_img(&window, &mc,  1050 - logo_size/2, 350 - logo_size/2);
 
     // Controls hint
     int hx = cx - 180, hy = window.h/2 + 90;

@@ -9,13 +9,6 @@
 
 static double last_proc_time = 0;
 
-// Edge-detection state (previous frame key state)
-static int tab_last   = 0;
-static int m_last     = 0;
-static int space_last = 0;
-static int n_last     = 0;
-static int esc_last   = 0;
-
 // Menu button geometry — MUST match draw_menu() in 51_render_helper.h exactly.
 // Buttons are screen-coord rectangles centered horizontally.
 // PvA: top-left y = window.h/2 - 80,  height 50
@@ -32,9 +25,6 @@ void process(){
     if(dt > 0.1) dt = 0.1;
     last_proc_time = now;
 
-    // ESC edge
-    int esc_clicked = window.key_escape && !esc_last;
-    esc_last = window.key_escape;
 
     // --------------------------------------------------
     // MENU
@@ -50,20 +40,16 @@ void process(){
                     reset_positions();
                     printf("Mode: Player vs AI\n");
 
-                    Mix_HaltMusic(); 
-                    if (bgm_match != NULL) {
-                        Mix_FadeInMusic(bgm_match, -1, 2000); 
-                    }
+					stop_sound(&bgm_menu);
+					play_sound_loop(&bgm_match);
                 }
                 if(my > menu_pvp_y() && my < menu_pvp_y() + MENU_BTN_H){
                     game_mode = MODE_PVP;
                     reset_positions();
                     printf("Mode: Player vs Player\n");
 
-                    Mix_HaltMusic(); 
-                    if (bgm_match != NULL) {
-                        Mix_FadeInMusic(bgm_match, -1, 2000); 
-                    }
+					stop_sound(&bgm_menu);
+					play_sound_loop(&bgm_match);
                 }
             }
         }
@@ -73,37 +59,21 @@ void process(){
     // --------------------------------------------------
     // BACK TO MENU: ESC or click back button
     // --------------------------------------------------
-    if(esc_clicked){
+	int return_menu = 0;
+    if(kb.key_escape.click){ return_menu = 1; }
+	if( check_point_in_box_2d(mouse.x, mouse.y, BACK_BTN_X, BACK_BTN_Y, BACK_BTN_W, BACK_BTN_H) && mouse.left.click){ return_menu = 1; }
+    if(return_menu){
         game_mode = MODE_MENU;
         reset_positions();
+		stop_sound(&bgm_match);
+		play_sound_loop(&bgm_menu);
         return;
     }
-    if(mouse.left.click){
-        int mx = mouse.x, my = mouse.y;
-        if(mx > BACK_BTN_X && mx < BACK_BTN_X + BACK_BTN_W &&
-           my > BACK_BTN_Y && my < BACK_BTN_Y + BACK_BTN_H){
-            game_mode = MODE_MENU;
-            reset_positions();
-            return;
-        }
-    }
-
     // --------------------------------------------------
     // GOAL FREEZE
     // --------------------------------------------------
     if(game.goal_cooldown > 0){ game.goal_cooldown--; return; }
 
-    // --------------------------------------------------
-    // EDGE DETECTION
-    // --------------------------------------------------
-    int tab_clicked    = window.key_tab    && !tab_last;
-    int m_clicked      = window.key_m      && !m_last;
-    int space_released = !window.key_space && space_last;
-    int n_released     = !window.key_n     && n_last;
-    tab_last   = window.key_tab;
-    m_last     = window.key_m;
-    space_last = window.key_space;
-    n_last     = window.key_n;
 
     // --------------------------------------------------
     // TEAM 0 (RED): WASD + SPACE + TAB
@@ -115,10 +85,10 @@ void process(){
         // Thêm role 3 vào vòng lặp next
         int next = (idx == 0) ? 1 : (idx == 1) ? 2 : (idx == 2) ? 3 : 0;
         handle_human(idx,
-            window.key_a, window.key_d,
-            window.key_w, window.key_s,
-            window.key_space, space_released,
-            tab_clicked,
+            kb.key_a.hold, kb.key_d.hold,
+            kb.key_w.hold, kb.key_s.hold,
+            kb.key_space.hold, kb.key_space.unclick,
+            kb.key_shift_l.click,
             &team0_active, next,
             dt);
         // Non-active red field players (từ 0 đến 3)
@@ -138,10 +108,10 @@ void process(){
         // Logic next cho index 5, 6, 7, 8
         int next = (idx == 5) ? 6 : (idx == 6) ? 7 : (idx == 7) ? 8 : 5;
         handle_human(idx,
-            window.key_arrow_left, window.key_arrow_right,
-            window.key_arrow_up,   window.key_arrow_down,
-            window.key_n, n_released,
-            m_clicked,
+            kb.key_arrow_left.hold, kb.key_arrow_right.hold,
+            kb.key_arrow_up.hold,   kb.key_arrow_down.hold,
+            kb.key_n.hold, kb.key_n.unclick,
+            kb.key_m.click,
             &team1_active, next,
             dt);
         
@@ -170,19 +140,18 @@ void process(){
     if(goal == 1){
         game.score_red++;
         printf("RED SCORES! %d - %d\n", game.score_red, game.score_blue);
-        if (sfx_goal != NULL) {
-            Mix_PlayChannel(-1, (Mix_Chunk*)sfx_goal, 0);
-        }
         game.goal_cooldown = 150;
         reset_positions();
-    } else if(goal == 2){
+
+		play_sound(&sfx_goal);
+    }
+	else if(goal == 2){
         game.score_blue++;
         printf("BLUE SCORES! %d - %d\n", game.score_red, game.score_blue);
-        if (sfx_goal != NULL) {
-            Mix_PlayChannel(-1, (Mix_Chunk*)sfx_goal, 0);
-        }
         game.goal_cooldown = 150;
         reset_positions();
+		
+	play_sound(&sfx_goal);
     }
 }
 

@@ -9,7 +9,7 @@
 //###############################################
 struct cpu_window_data window;
 struct mouse_data mouse;
-
+struct kb_data kb;
 //###############################################
 //####              APP DATA                 ####
 //###############################################
@@ -87,7 +87,7 @@ struct wind_data         wind;
 struct dust_particle     dust[MAX_DUST];
 
 // Currently human-selected index per team.
-// Red  cycles 0->1->2->0  (TAB)
+// Red  cycles 0->1->2->0  (SHIFT)
 // Blue cycles 4->5->6->4  (M)
 int team0_active;
 int team1_active;
@@ -96,18 +96,18 @@ double kick_charge[NUM_FOOTBALLERS];  // 0..1, charge builds while holding kick 
 double kick_timer[NUM_FOOTBALLERS];   // cooldown seconds remaining
 
 // PNG
-SDL_Texture* tex_pva_raw = NULL;
-SDL_Texture* tex_pva_hover = NULL;
-SDL_Texture* tex_pvp_raw = NULL;
-SDL_Texture* tex_pvp_hover = NULL;
-SDL_Texture* mu = NULL;
-SDL_Texture* mc = NULL;
+img_data tex_pva_raw;
+img_data tex_pva_hover;
+img_data tex_pvp_raw;
+img_data tex_pvp_hover;
+img_data mu;
+img_data mc;
 
 //sound
-Mix_Music *bgm_menu = NULL;
-Mix_Music *bgm_match = NULL;
-Mix_Chunk *sfx_goal = NULL;
-Mix_Chunk *sfx_kick = NULL;
+sound_data bgm_menu;
+sound_data bgm_match;
+sound_data sfx_goal;
+sound_data sfx_kick;
 
 // Menu button screen coords — single source of truth used by both process and render
 #define MENU_BTN_CX      600   // will be overwritten to window.w/2 at runtime but fine as default

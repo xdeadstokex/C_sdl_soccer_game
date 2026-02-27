@@ -5,12 +5,12 @@
 
 
 //############  mouse section  ##################
-struct signal_data{
+typedef struct {
 int hold;
 int hold_last;
 int click;
 int unclick;
-};
+} signal_data;
 
 
 struct mouse_data{
@@ -23,9 +23,9 @@ int motion;
 
 int click;
 
-struct signal_data left;
-struct signal_data middle;
-struct signal_data right;
+signal_data left;
+signal_data middle;
+signal_data right;
 /*
 int hold_left; int hold_left_last;
 int click_left; int unclick_left;
@@ -42,6 +42,38 @@ int scroll_v;
 void* grab;
 void (*gui_process)(void);
 int new_grab; // to check whether new grab
+};
+
+
+struct kb_data{
+int key_signal;
+signal_data key_a; signal_data key_b; signal_data key_c;
+signal_data key_d; signal_data key_e; signal_data key_f;
+signal_data key_g; signal_data key_h; signal_data key_i;
+signal_data key_j; signal_data key_k; signal_data key_l;
+signal_data key_m; signal_data key_n; signal_data key_o;
+signal_data key_p; signal_data key_q; signal_data key_r;
+signal_data key_s; signal_data key_t; signal_data key_u;
+signal_data key_v; signal_data key_w; signal_data key_x;
+signal_data key_y; signal_data key_z;
+
+signal_data key_0; signal_data key_1; signal_data key_2;
+signal_data key_3; signal_data key_4; signal_data key_5;
+signal_data key_6; signal_data key_7; signal_data key_8;
+signal_data key_9;
+
+signal_data key_arrow_up; signal_data key_arrow_down;
+signal_data key_arrow_left; signal_data key_arrow_right;
+
+signal_data key_space;
+signal_data key_enter;
+signal_data key_escape;
+signal_data key_tab;
+signal_data key_backspace;
+signal_data key_capslock;
+signal_data key_shift_l; signal_data key_shift_r;
+signal_data key_ctrl_l; signal_data key_ctrl_r;
+signal_data key_alt_left; signal_data key_alt_right;
 };
 
 
@@ -93,7 +125,7 @@ return;
 
 
 void update_signal(void* input, int signal){
-struct signal_data* signal_info = (struct signal_data*) input;
+signal_data* signal_info = (signal_data*) input;
 signal_info->hold_last = signal_info->hold;
 signal_info->hold = signal;
 
@@ -101,6 +133,8 @@ signal_info->click = signal && !signal_info->hold_last;
 signal_info->unclick = !signal && signal_info->hold_last;
 return;
 }
+
+
 
 
 #endif

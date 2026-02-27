@@ -108,9 +108,8 @@ NOTES
 
 
 typedef struct {
-void* data;  // Either Mix_Chunk* or Mix_Music*
-int type;// 0 = sound effect, 1 = music
-int channel; // Channel it's playing on (for sound effects)
+Mix_Chunk* data;
+int channel;
 } sound_data;
 
 
@@ -494,27 +493,12 @@ return 1.0 / ((double)(get_time_sec()) - current_time);
 }
 
 
-
-// Load sound (auto-detects type from extension)
+// Load sound (any format: wav, mp3, ogg, flac)
 void load_sound(sound_data* sound, const char* path){
 sound->data = NULL;
 sound->channel = -1;
-
-// Get extension
-const char* ext = strrchr(path, '.');
-if(ext == NULL) return;
-
-// .mp3, .ogg, .flac = music, everything else = sound effect
-if(strcmp(ext, ".mp3") == 0 || strcmp(ext, ".ogg") == 0 || strcmp(ext, ".flac") == 0){
-sound->type = 1;
-sound->data = Mix_LoadMUS(path);
-if(sound->data == NULL) printf("Mix_LoadMUS: %s\n", Mix_GetError());
-}
-else{
-sound->type = 0;
 sound->data = Mix_LoadWAV(path);
 if(sound->data == NULL) printf("Mix_LoadWAV: %s\n", Mix_GetError());
-}
 return;
 }
 
@@ -522,9 +506,7 @@ return;
 // Play sound
 void play_sound(sound_data* sound){
 if(sound->data == NULL) return;
-
-if(sound->type == 0){ sound->channel = Mix_PlayChannel(-1, (Mix_Chunk*)sound->data, 0); }
-else{ Mix_PlayMusic((Mix_Music*)sound->data, 0); }
+sound->channel = Mix_PlayChannel(-1, sound->data, 0);
 return;
 }
 
@@ -532,9 +514,7 @@ return;
 // Play sound looped
 void play_sound_loop(sound_data* sound){
 if(sound->data == NULL) return;
-
-if(sound->type == 0){ sound->channel = Mix_PlayChannel(-1, (Mix_Chunk*)sound->data, -1); }
-else{ Mix_PlayMusic((Mix_Music*)sound->data, -1); }
+sound->channel = Mix_PlayChannel(-1, sound->data, -1);
 return;
 }
 
@@ -542,11 +522,7 @@ return;
 // Stop sound
 void stop_sound(sound_data* sound){
 if(sound->data == NULL) return;
-
-if(sound->type == 0){
 if(sound->channel >= 0) Mix_HaltChannel(sound->channel);
-}
-else{ Mix_HaltMusic(); }
 return;
 }
 
@@ -554,28 +530,31 @@ return;
 // Set volume (0-128)
 void set_sound_volume(sound_data* sound, int vol){
 if(sound->data == NULL) return;
-
-if(sound->type == 0){ Mix_VolumeChunk((Mix_Chunk*)sound->data, vol); }
-else{ Mix_VolumeMusic(vol); }
+Mix_VolumeChunk(sound->data, vol);
 return;
 }
 
 
 void free_sound(sound_data* sound){
 if(sound->data == NULL) return;
-
-if(sound->type == 0){ Mix_FreeChunk((Mix_Chunk*)sound->data); }
-else{ Mix_FreeMusic((Mix_Music*)sound->data); }
+Mix_FreeChunk(sound->data);
 sound->data = NULL;
 return;
 }
 
+// Pause sound
+void pause_sound(sound_data* sound){
+if(sound->data == NULL) return;
+if(sound->channel >= 0) Mix_Pause(sound->channel);
+return;
+}
 
-
-
-
-
-
+// Resume sound
+void resume_sound(sound_data* sound){
+if(sound->data == NULL) return;
+if(sound->channel >= 0) Mix_Resume(sound->channel);
+return;
+}
 
 
 void load_img(struct cpu_window_data* window, img_data* img, const char* path){
