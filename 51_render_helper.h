@@ -271,47 +271,45 @@ void draw_back_button(){
 void draw_menu(){
     // Dim overlay over field
     //draw_rect(&window, 0, 0, window.w, window.h, 0x00000099);
-
+    struct internal_data* back = (struct internal_data*)window.data;
     int cx  = window.w / 2;
     int bx  = menu_btn_x_r();
     int bw  = MENU_BTN_W;
     int bh  = MENU_BTN_H;
-
-    // Title (coloured block pattern — no font needed)
-    draw_rect(&window, cx - 160, window.h/2 - 160, 320, 50, 0x1A1A2EFF);
-    for(int i = 0; i < 14; i++){
-        int col = (i % 2 == 0) ? 0xFF4444FF : 0xFFAA00FF;
-        draw_rect(&window, cx - 140 + i*20, window.h/2 - 150, 16, 30, col);
-    }
-
-    // PvA button
     int pva_y = menu_pva_y_r();
-    draw_rect(&window, bx, pva_y, bw, bh, 0x22AA44FF);
-    draw_rect(&window, bx, pva_y,      bw, 2,  0xFFFFFFFF);
-    draw_rect(&window, bx, pva_y+bh-2, bw, 2,  0xFFFFFFFF);
-    draw_rect(&window, bx, pva_y,      2,  bh, 0xFFFFFFFF);
-    draw_rect(&window, bx+bw-2, pva_y, 2,  bh, 0xFFFFFFFF);
-    for(int i = 0; i < 8; i++)
-        draw_rect(&window, cx - 60 + i*16, pva_y + 15, 12, 20, 0xEEFFEEFF);
-
-    // PvP button
     int pvp_y = menu_pvp_y_r();
-    draw_rect(&window, bx, pvp_y, bw, bh, 0x2244CCFF);
-    draw_rect(&window, bx, pvp_y,      bw, 2,  0xFFFFFFFF);
-    draw_rect(&window, bx, pvp_y+bh-2, bw, 2,  0xFFFFFFFF);
-    draw_rect(&window, bx, pvp_y,      2,  bh, 0xFFFFFFFF);
-    draw_rect(&window, bx+bw-2, pvp_y, 2,  bh, 0xFFFFFFFF);
-    for(int i = 0; i < 8; i++)
-        draw_rect(&window, cx - 60 + i*16, pvp_y + 15, 12, 20, 0xDDEEFFFF);
-
-    // Hover highlights
-    int mx = mouse.x, my = mouse.y;
-    if(mx > bx && mx < bx + bw){
-        if(my > pva_y && my < pva_y + bh)
-            draw_rect(&window, bx, pva_y, bw, bh, 0xFFFFFF22);
-        if(my > pvp_y && my < pvp_y + bh)
-            draw_rect(&window, bx, pvp_y, bw, bh, 0xFFFFFF22);
+    int mx = mouse.x;
+    int my = mouse.y;
+    int logo_size = 200;
+    // Title (coloured block pattern — no font needed)
+    SDL_Rect rect_pva = { bx, pva_y, bw, bh };
+    if(mx > bx && mx < bx + bw && my > pva_y && my < pva_y + bh) {
+        SDL_RenderCopy(back->sdl_renderer, tex_pva_hover, NULL, &rect_pva);
+    } else {
+        SDL_RenderCopy(back->sdl_renderer, tex_pva_raw, NULL, &rect_pva);
     }
+
+    // --- Nút PvP ---
+    SDL_Rect rect_pvp = { bx, pvp_y, bw, bh };
+    if(mx > bx && mx < bx + bw && my > pvp_y && my < pvp_y + bh) {
+        SDL_RenderCopy(back->sdl_renderer, tex_pvp_hover, NULL, &rect_pvp);
+    } else {
+        SDL_RenderCopy(back->sdl_renderer, tex_pvp_raw, NULL, &rect_pvp);
+    }
+
+    SDL_Rect rect_mu = { 300 - logo_size/2, 350 - logo_size/2, logo_size, logo_size };
+    SDL_RenderCopy(back->sdl_renderer, mu, NULL, &rect_mu);
+
+
+    SDL_Rect rect_mc = { 900 - logo_size/2, 350 - logo_size/2, logo_size, logo_size };
+    SDL_RenderCopy(back->sdl_renderer, mc, NULL, &rect_mc);
+    // // Hover highlights
+    // if(mx > bx && mx < bx + bw){
+    //     if(my > pva_y && my < pva_y + bh)
+    //         draw_rect(&window, bx, pva_y, bw, bh, 0xFFFFFF22);
+    //     if(my > pvp_y && my < pvp_y + bh)
+    //         draw_rect(&window, bx, pvp_y, bw, bh, 0xFFFFFF22);
+    // }
 
     // Controls hint
     int hx = cx - 180, hy = window.h/2 + 90;

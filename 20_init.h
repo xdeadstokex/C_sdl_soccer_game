@@ -29,6 +29,14 @@ int init(){
     double PI = 3.14159265358979;
     double r  = 14.0;
 
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+        printf("SDL_mixer Error: %s\n", Mix_GetError());
+    }
+    bgm_menu  = Mix_LoadMUS("assets/menu_theme.mp3");
+    bgm_match = Mix_LoadMUS("assets/match_theme.mp3");
+    sfx_goal  = Mix_LoadWAV("assets/goal_sound.mp3");
+    sfx_kick  = Mix_LoadWAV("assets/kick.mp3");
+    if (bgm_menu) Mix_PlayMusic(bgm_menu, -1); 
     // Red team (faces right = angle 0)
     set_footballer(0, fw*0.30, fh*0.35, r,   0, 0, 0, 1); // field 1 
     set_footballer(1, fw*0.25, fh*0.65, r,   0, 0, 0, 0); // field 2
@@ -83,6 +91,16 @@ int init(){
         kick_timer[i]  = 0;
     }
 
+
+
+    struct internal_data* back = (struct internal_data*)window.data;
+
+    tex_pva_raw   = IMG_LoadTexture(back->sdl_renderer, "assets/pvaraw.png");
+    tex_pva_hover = IMG_LoadTexture(back->sdl_renderer, "assets/pva.png");
+    tex_pvp_raw   = IMG_LoadTexture(back->sdl_renderer, "assets/pvpraw.png");
+    tex_pvp_hover = IMG_LoadTexture(back->sdl_renderer, "assets/pvp.png");
+    mu = IMG_LoadTexture(back->sdl_renderer, "assets/mu.png");
+    mc = IMG_LoadTexture(back->sdl_renderer, "assets/mc.png");
     return 1;
 }
 
