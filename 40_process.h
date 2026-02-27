@@ -84,13 +84,13 @@ void process(){
         int idx  = team0_active;
         // Thêm role 3 vào vòng lặp next
         int next = (idx == 0) ? 1 : (idx == 1) ? 2 : (idx == 2) ? 3 : 0;
-        handle_human(idx,
-            kb.key_a.hold, kb.key_d.hold,
-            kb.key_w.hold, kb.key_s.hold,
-            kb.key_space.hold, kb.key_space.unclick,
-            kb.key_shift_l.click,
-            &team0_active, next,
-            dt);
+		handle_human(idx,
+			kb.key_a.hold, kb.key_d.hold,
+			kb.key_w.hold, kb.key_s.hold,
+			kb.key_space.hold, kb.key_space.unclick,
+			kb.key_shift_l.click,
+			kb.key_ctrl_l.hold,
+			&team0_active, next, dt);
         // Non-active red field players (từ 0 đến 3)
         for(int i = 0; i <= 3; i++)
             if(i != team0_active) ai_footballer(i, dt);
@@ -107,14 +107,14 @@ void process(){
         int idx  = team1_active;
         // Logic next cho index 5, 6, 7, 8
         int next = (idx == 5) ? 6 : (idx == 6) ? 7 : (idx == 7) ? 8 : 5;
-        handle_human(idx,
-            kb.key_arrow_left.hold, kb.key_arrow_right.hold,
-            kb.key_arrow_up.hold,   kb.key_arrow_down.hold,
-            kb.key_n.hold, kb.key_n.unclick,
-            kb.key_m.click,
-            &team1_active, next,
-            dt);
-        
+		handle_human(idx,
+			kb.key_arrow_left.hold, kb.key_arrow_right.hold,
+			kb.key_arrow_up.hold,   kb.key_arrow_down.hold,
+			kb.key_n.hold, kb.key_n.unclick,
+			kb.key_m.click,
+			kb.key_shift_r.hold,
+			&team1_active, next, dt);
+
         for(int i = 5; i <= 8; i++)
             if(i != team1_active) ai_footballer(i, dt);
         ai_footballer(BLUE_GOALIE_IDX, dt);

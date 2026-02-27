@@ -124,14 +124,10 @@ void clamp_goalie_zone(struct footballer_data* f, int zone_idx){
 // FOOTBALLER MOVEMENT (velocity-style)
 // accel_x/y already scaled to PLAYER_ACCEL magnitude
 // -------------------------------------------------------
-void move_footballer(struct footballer_data* f, double accel_x, double accel_y, double dt){
+void move_footballer(struct footballer_data* f, double accel_x, double accel_y, double dt, double boost){
     update_clock(&f->clock);
     double real_dt = f->clock.delta;
     if(real_dt <= 0 || real_dt > 0.1) real_dt = dt;
-
-    // Facing angle follows input direction
-    if(fabs(accel_x) > 0.1 || fabs(accel_y) > 0.1)
-        f->angle_rad = atan2(accel_y, accel_x);
 
     // Wind nudge on player
     double wx = wind.vx * WIND_PLAYER_SCALE;
@@ -148,9 +144,10 @@ void move_footballer(struct footballer_data* f, double accel_x, double accel_y, 
 
     // Speed cap
     double spd = sqrt(f->vx*f->vx + f->vy*f->vy);
-    if(spd > PLAYER_MAXV){
-        f->vx = f->vx / spd * PLAYER_MAXV;
-        f->vy = f->vy / spd * PLAYER_MAXV;
+	double maxv = PLAYER_MAXV * boost;
+    if(spd > maxv){
+        f->vx = f->vx / spd * maxv;
+        f->vy = f->vy / spd * maxv;
     }
 
     f->x += f->vx * real_dt;
@@ -216,7 +213,7 @@ void update_ball_dt(double dt){
         ball.y  = own->y + sin(own->angle_rad) * carry_dist;
         ball.vx = own->vx;
         ball.vy = own->vy;
-        return;
+        //return;
     }
 
     // Wind accelerates free ball
@@ -257,13 +254,48 @@ void update_ball_dt(double dt){
 // When close enough it snaps to ownership
 // -------------------------------------------------------
 void check_ball_attract(double dt){
-    if(ball.owner >= 0) return;
+	// to allow ball to be taken away
+    if(ball.owner >= 0){
+	struct footballer_data* f = &footballers[ball.owner];
+	double dx   = ball.x - f->x;
+	double dy   = ball.y - f->y;
+	// Angle from player to ball
+	double ball_angle = atan2(dy, dx); // physics coords
+
+	// Difference from player facing
+	double diff = ball_angle - f->angle_rad;
+	while(diff >  M_PI) diff -= 2*M_PI;
+	while(diff < -M_PI) diff += 2*M_PI;
+
+	// Only attract if ball is within 45 degrees in front
+	if(fabs(diff) > M_PI / 4){
+	ball.owner  = -1;
+    f->has_ball = 0;
+	}
+
+	return;
+	}
+	
+	
     for(int i = 0; i < NUM_FOOTBALLERS; i++){
         struct footballer_data* f = &footballers[i];
         double dx   = ball.x - f->x;
         double dy   = ball.y - f->y;
         double dist = sqrt(dx*dx + dy*dy);
         if(dist > ATTRACT_RADIUS || dist < 0.1) continue;
+
+
+        // Angle from player to ball
+        double ball_angle = atan2(dy, dx); // physics coords
+
+        // Difference from player facing
+        double diff = ball_angle - f->angle_rad;
+        while(diff >  M_PI) diff -= 2*M_PI;
+        while(diff < -M_PI) diff += 2*M_PI;
+
+        // Only attract if ball is within 45 degrees in front
+        if(fabs(diff) >M_PI / 4) continue;
+
 
         // Pull ball toward player
         ball.vx += (-dx / dist) * ATTRACT_FORCE * dt;
@@ -285,28 +317,30 @@ void check_ball_attract(double dt){
 // BALL REFLECT — free ball bounces off player circles
 // -------------------------------------------------------
 void check_ball_reflect(){
-    if(ball.owner >= 0) return;
-    for(int i = 0; i < NUM_FOOTBALLERS; i++){
-        struct footballer_data* f = &footballers[i];
-        double dx   = ball.x - f->x;
-        double dy   = ball.y - f->y;
-        double dist = sqrt(dx*dx + dy*dy);
-        double min_d = f->r + ball.r;
-        if(dist >= min_d || dist < 0.01) continue;
-
-        double nx = dx / dist;
-        double ny = dy / dist;
-        // Push ball outside player
-        ball.x = f->x + nx * (min_d + 1.0);
-        ball.y = f->y + ny * (min_d + 1.0);
-        // Reflect velocity, slightly dampened
-        double dot = ball.vx*nx + ball.vy*ny;
-        if(dot < 0){
-            ball.vx -= 2.0*dot*nx;
-            ball.vy -= 2.0*dot*ny;
-            ball.vx *= 0.75;
-            ball.vy *= 0.75;
+    int max_iter = 5;
+    for(int iter = 0; iter < max_iter; iter++){
+        int any = 0;
+        for(int i = 0; i < NUM_FOOTBALLERS; i++){
+            struct footballer_data* f = &footballers[i];
+            double dx   = ball.x - f->x;
+            double dy   = ball.y - f->y;
+            double dist = sqrt(dx*dx + dy*dy);
+            double min_d = f->r + ball.r;
+            if(dist >= min_d || dist < 0.01) continue;
+            any = 1;
+            double nx = dx / dist;
+            double ny = dy / dist;
+            ball.x = f->x + nx * (min_d + 1.0);
+            ball.y = f->y + ny * (min_d + 1.0);
+            double dot = ball.vx*nx + ball.vy*ny;
+            if(dot < 0){
+                ball.vx -= 2.0*dot*nx;
+                ball.vy -= 2.0*dot*ny;
+                ball.vx *= 0.75;
+                ball.vy *= 0.75;
+            }
         }
+        if(!any) break; // no overlap, done early
     }
 }
 
@@ -342,47 +376,47 @@ void handle_human(int idx,
                   int left, int right, int up, int down,
                   int kick_held, int kick_released,
                   int tab_clicked,
+                  int boost_held,
                   int* team_active_ptr,
                   int next_idx,
                   double dt)
 {
-    // Tab/M: cycle to next teammate
     if(tab_clicked){
         footballers[idx].is_active    = 0;
         *team_active_ptr              = next_idx;
         footballers[next_idx].is_active = 1;
         return;
     }
-
     struct footballer_data* f = &footballers[idx];
 
-    // Acceleration from keys
-    double ax = 0, ay = 0;
-    if(left)  ax -= PLAYER_ACCEL;
-    if(right) ax += PLAYER_ACCEL;
-    if(up)    ay += PLAYER_ACCEL;
-    if(down)  ay -= PLAYER_ACCEL;
+    // Rotate left/right
+    double TURN_SPEED = 3.0; // radians/sec, tune
+    if(left)  f->angle_rad += TURN_SPEED * dt;
+    if(right) f->angle_rad -= TURN_SPEED * dt;
 
-    // Normalize diagonal so it doesn't go faster
-    double alen = sqrt(ax*ax + ay*ay);
-    if(alen > PLAYER_ACCEL + 0.1){
-        ax = ax / alen * PLAYER_ACCEL;
-        ay = ay / alen * PLAYER_ACCEL;
+    // Move forward/backward along facing direction
+    double ax = 0, ay = 0;
+    double boost = boost_held ? 1.8 : 1.0; // tune
+
+    if(up){
+        ax += cos(f->angle_rad) * PLAYER_ACCEL * boost;
+        ay += sin(f->angle_rad) * PLAYER_ACCEL * boost;
+    }
+    if(down){
+        ax -= cos(f->angle_rad) * PLAYER_ACCEL * boost;
+        ay -= sin(f->angle_rad) * PLAYER_ACCEL * boost;
     }
 
-    move_footballer(f, ax, ay, dt);
+    move_footballer(f, ax, ay, dt, boost);
 
-    // Goalie zone applies even when human-controlled
     if(f->is_goalie)
         clamp_goalie_zone(f, (f->team == 0) ? 0 : 1);
 
-    // Kick charge while holding key with ball
     kick_timer[idx] -= dt;
     if(kick_held && ball.owner == idx){
         kick_charge[idx] += KICK_CHARGE_RATE * dt;
         if(kick_charge[idx] > 1.0) kick_charge[idx] = 1.0;
     }
-    // Kick fires on key release
     if(kick_released && kick_timer[idx] <= 0){
         if(ball.owner == idx) kick_ball(idx, kick_charge[idx]);
         kick_timer[idx]  = KICK_COOLDOWN;
@@ -402,35 +436,28 @@ static int    goalie_has_ball_team = -1;
 static double goalie_hold_timer    = 0.0;  // countdown: goalie kicks when this hits 0
 
 //hàm check đường ống từ ax, ay tới bx, by có bị đối thủ ở ex, ey chặn ko
-static inline int is_pass_blocked(double ax, double ay, double bx, double by, 
+static inline int is_pass_blocked(double ax, double ay, double bx, double by,
                                   double ex, double ey, double intercept_radius) {
-    //vector ab
     double abx = bx - ax;
     double aby = by - ay;
-    //vector ae
     double aex = ex - ax;
     double aey = ey - ay;
 
-    double dot = aex * abx + aey * aby; //tính ae . ab (chiếu ae lên ab)
-    double ab_len_sq = abx * abx + aby * aby; //tính ab . ab (chiếu ab lên ab)
+    double dot = aex * abx + aey * aby;
+    double ab_len_sq = abx * abx + aby * aby;
 
-    if (ab_len_sq == 0) return 0; //a và b trùng nhau --> tránh chia cho 0
+    if (ab_len_sq == 0) return 0;
 
     double t = dot / ab_len_sq;
-
-    //gom về 0-->1 bỏ đi các điểm nằm ngoài đoạn ab
     if (t < 0.0) t = 0.0;
     if (t > 1.0) t = 1.0;
 
-    //điểm c thuộc ab gần e nhất
     double cx = ax + t * abx;
     double cy = ay + t * aby;
 
-    //tính ce
     double dx = ex - cx;
     double dy = ey - cy;
-    
-    //so sánh với khoảng cách cắt bóng
+
     return (sqrt(dx * dx + dy * dy) < intercept_radius);
 }
 
@@ -439,26 +466,21 @@ void ai_footballer(int idx, double dt){
 
     // ----------------------------------------------------------------
     // GLOBAL POSSESSION TRACKING
-    // Detect the moment a goalie picks up the ball and arm the hold timer
     // ----------------------------------------------------------------
     static int team_possession = -1;
     if (ball.owner >= 0) {
         team_possession = footballers[ball.owner].team;
 
-        // Goalie just grabbed the ball → start hold timer (not already tracking)
         if (footballers[ball.owner].is_goalie) {
             int goalie_team = footballers[ball.owner].team;
             if (goalie_has_ball_team != goalie_team) {
                 goalie_has_ball_team = goalie_team;
-                // Random hold: 1.5 – 3.5 seconds
                 goalie_hold_timer = 1.5 + ((double)rand() / RAND_MAX) * 2.0;
             }
         } else {
-            // Outfield player has it — clear goalie state
             goalie_has_ball_team = -1;
         }
     } else {
-        // No owner — clear goalie state
         goalie_has_ball_team = -1;
     }
 
@@ -477,11 +499,9 @@ void ai_footballer(int idx, double dt){
     // ----------------------------------------------------------------
     // GOALIE POSSESSION MODE — override all normal movement
     // ----------------------------------------------------------------
-    // Is any goalie currently holding the ball?
     int gk_possession_active = (goalie_has_ball_team >= 0);
 
     if (gk_possession_active && !f->is_goalie) {
-        // Which team's goalie has the ball?
         int gk_team  = goalie_has_ball_team;
         int gk_idx   = (gk_team == 0) ? RED_GOALIE_IDX : BLUE_GOALIE_IDX;
         double gk_x  = footballers[gk_idx].x;
@@ -491,42 +511,33 @@ void ai_footballer(int idx, double dt){
         double attack_dir = (f->team == 0) ? 1.0 : -1.0;
 
         if (f->team != gk_team) {
-            // ---- ĐỘI PHÒNG NGỰ: 3 lùi về kèm người, 1 ở lại pressing ----
+            // ---- DEFENDING TEAM: press or drop back ----
             double my_dist = sqrt(pow(f->x - gk_x, 2) + pow(f->y - gk_y, 2));
-            int press_rank = 0;  
+            int press_rank = 0;
             int opp_start = (f->team == 0) ? 0 : 5;
-            int opp_end   = (f->team == 0) ? 3 : 8; // Đội hình 4 người trên sân
+            int opp_end   = (f->team == 0) ? 3 : 8;
             for (int i = opp_start; i <= opp_end; i++) {
                 if (i == idx || footballers[i].is_goalie) continue;
                 double od = sqrt(pow(footballers[i].x - gk_x, 2) + pow(footballers[i].y - gk_y, 2));
-                // Thêm điều kiện (od == my_dist && i < idx) để 2 người không bao giờ bị trùng rank
                 if (od < my_dist || (od == my_dist && i < idx)) press_rank++;
             }
 
             if (press_rank == 0) {
-                // VAI TRÒ 1: Presser (Người gần gôn địch nhất)
-                // Đứng ở giữa sân, chếch về phía sân đối phương một chút để pressing
                 target_x = window.w / 2.0 - attack_dir * 150.0;
-                target_y = gk_y; // Đứng chực chờ trên trục đường chuyền thẳng của thủ môn
+                target_y = gk_y;
             } else {
-                // VAI TRÒ 2, 3, 4: Hàng thủ 3 người rút về sân nhà
-                target_x = own_gx + attack_dir * (window.w * 0.2); // Cách gôn nhà 20% chiều dài sân
-                
-                if (press_rank == 1) {
-                    target_y = 120.0; // Rút về cánh trên
-                } else if (press_rank == 2) {
-                    target_y = window.h / 2.0; // Rút về trung lộ (Thòng/Sweeper)
-                } else {
-                    target_y = window.h - 120.0; // Rút về cánh dưới
-                }
+                target_x = own_gx + attack_dir * (window.w * 0.2);
+                if (press_rank == 1)      target_y = 120.0;
+                else if (press_rank == 2) target_y = window.h / 2.0;
+                else                      target_y = window.h - 120.0;
             }
 
         } else {
-            // ---- ĐỘI TẤN CÔNG (CÓ BÓNG): 2 hậu vệ dạt biên, 2 tiền đạo cắm biên ----
+            // ---- ATTACKING TEAM (has ball): spread out ----
             double my_dist = sqrt(pow(f->x - gk_x, 2) + pow(f->y - gk_y, 2));
             int recv_rank = 0;
             int own_start = (f->team == 0) ? 0 : 5;
-            int own_end   = (f->team == 0) ? 3 : 8; 
+            int own_end   = (f->team == 0) ? 3 : 8;
             for (int i = own_start; i <= own_end; i++) {
                 if (i == idx || footballers[i].is_goalie) continue;
                 double od = sqrt(pow(footballers[i].x - gk_x, 2) + pow(footballers[i].y - gk_y, 2));
@@ -534,33 +545,28 @@ void ai_footballer(int idx, double dt){
             }
 
             if (recv_rank == 0 || recv_rank == 1) {
-                // VAI TRÒ 1 & 2: Hậu vệ biên (Fullbacks)
-                // Đứng ngang vòng cấm nhà (15% sân), dạt hẳn ra 2 biên sát đường biên dọc
                 target_x = own_gx + attack_dir * (window.w * 0.15);
                 target_y = (recv_rank == 0) ? 80.0 : (window.h - 80.0);
             } else {
-                // VAI TRÒ 3 & 4: Tiền đạo cánh (Wingers)
-                // Đẩy lên cực cao (65% sân - tức là đã qua vạch giữa sân), bám sát biên
                 target_x = own_gx + attack_dir * (window.w * 0.65);
                 target_y = (recv_rank == 2) ? 100.0 : (window.h - 100.0);
             }
 
-            // Chống việt vị (Tránh việc 2 tiền đạo cắm chạy thẳng vào tận lưới địch)
             double offside_line = enemy_gx - attack_dir * 80.0;
             if (f->team == 0 && target_x > offside_line) target_x = offside_line;
             if (f->team == 1 && target_x < offside_line) target_x = offside_line;
         }
 
-        // Move toward target
         double dx = target_x - f->x, dy = target_y - f->y;
         double d  = sqrt(dx*dx + dy*dy);
         if (d > 8.0) {
             double spd = PLAYER_ACCEL * 1.05;
-            move_footballer(f, (dx/d)*spd, (dy/d)*spd, dt);
+            f->angle_rad = atan2(dy, dx);
+            move_footballer(f, (dx/d)*spd, (dy/d)*spd, dt, 1.0);
         } else {
-            move_footballer(f, 0, 0, dt);
+            move_footballer(f, 0, 0, dt, 1.0);
         }
-        return; // skip all normal AI below
+        return;
     }
 
     // ----------------------------------------------------------------
@@ -570,15 +576,10 @@ void ai_footballer(int idx, double dt){
 
     if (f->is_goalie) {
 
-        // If this goalie has the ball: hold, then find best clearance target
         if (ball.owner == idx) {
             goalie_hold_timer -= dt;
 
             if (goalie_hold_timer <= 0) {
-                // Score every non-goalie teammate for clearance quality:
-                //   + distance from nearest enemy (space)
-                //   + forward position (closer to enemy goal)
-                //   - blocked passes
                 int best_target = -1;
                 double best_score = -9999.0;
                 int own_start = (f->team == 0) ? 0 : 5;
@@ -588,7 +589,6 @@ void ai_footballer(int idx, double dt){
                     if (footballers[i].is_goalie) continue;
                     struct footballer_data* recv = &footballers[i];
 
-                    // Space: distance to nearest enemy
                     double min_enemy_dist = 9999.0;
                     for (int e = 0; e < NUM_FOOTBALLERS; e++) {
                         if (footballers[e].team == f->team) continue;
@@ -597,14 +597,12 @@ void ai_footballer(int idx, double dt){
                         if (ed < min_enemy_dist) min_enemy_dist = ed;
                     }
 
-                    // Forward position reward
                     double dist_to_enemy_goal = sqrt(pow(enemy_gx - recv->x, 2) +
                                                      pow(enemy_gy - recv->y, 2));
 
-                    double score = min_enemy_dist * 1.5       // space is king
-                                 + (window.w - dist_to_enemy_goal) * 0.5; // forward bonus
+                    double score = min_enemy_dist * 1.5
+                                 + (window.w - dist_to_enemy_goal) * 0.5;
 
-                    // Penalise blocked lanes
                     for (int e = 0; e < NUM_FOOTBALLERS; e++) {
                         if (footballers[e].team == f->team) continue;
                         if (is_pass_blocked(f->x, f->y, recv->x, recv->y,
@@ -619,7 +617,6 @@ void ai_footballer(int idx, double dt){
                 }
 
                 if (best_target >= 0) {
-                    // Lead pass using real kick speed
                     struct footballer_data* recv = &footballers[best_target];
                     double pass_charge   = 0.65;
                     double pass_speed    = KICK_POWER_MIN + (KICK_POWER_MAX - KICK_POWER_MIN) * pass_charge;
@@ -629,20 +626,17 @@ void ai_footballer(int idx, double dt){
                     double lead_y = recv->y + recv->vy * time_to_reach;
                     f->angle_rad = atan2(lead_y - f->y, lead_x - f->x);
                     kick_ball(idx, pass_charge);
-                    goalie_has_ball_team = -1; // clear state immediately
+                    goalie_has_ball_team = -1;
                 } else {
-                    // No teammate found — just hoof it forward
                     f->angle_rad = (f->team == 0) ? 0.0 : PH_PI;
                     kick_ball(idx, 1.0);
                     goalie_has_ball_team = -1;
                 }
             }
-            // Still holding — stand still in zone centre
             target_x = own_gx + ((f->team == 0) ?  (f->r + 4.0) : -(f->r + 4.0));
             target_y = own_gy;
 
         } else {
-            // Normal goalie positioning (no ball)
             double b_dx = ball.x - own_gx;
             double b_dy = ball.y - own_gy;
             double dist = sqrt(b_dx*b_dx + b_dy*b_dy);
@@ -680,7 +674,6 @@ void ai_footballer(int idx, double dt){
                 }
             }
 
-            // Clamp inside zone
             int    zi   = (f->team == 0) ? 0 : 1;
             double tz_r = goalie_zones[zi].r - f->r;
             double tcx  = goalie_zones[zi].cx, tcy = goalie_zones[zi].cy;
@@ -692,13 +685,16 @@ void ai_footballer(int idx, double dt){
             if (f->team == 1 && target_x > tcx - sl) target_x = tcx - sl;
         }
 
-        // Move goalie
         {
             double dx = target_x - f->x, dy = target_y - f->y;
             double d  = sqrt(dx*dx + dy*dy);
             double ax = 0, ay = 0;
-            if (d > 8.0) { ax = (dx/d)*PLAYER_ACCEL*1.05; ay = (dy/d)*PLAYER_ACCEL*1.05; }
-            move_footballer(f, ax, ay, dt);
+            if (d > 8.0) {
+                ax = (dx/d)*PLAYER_ACCEL*1.05;
+                ay = (dy/d)*PLAYER_ACCEL*1.05;
+                f->angle_rad = atan2(ay, ax);
+            }
+            move_footballer(f, ax, ay, dt, 1.0);
         }
         clamp_goalie_zone(f, (f->team == 0) ? 0 : 1);
         return;
@@ -778,13 +774,16 @@ void ai_footballer(int idx, double dt){
             }
         }
 
-        // Move
         {
             double dx = target_x - f->x, dy = target_y - f->y;
             double d  = sqrt(dx*dx + dy*dy);
             double ax = 0, ay = 0;
-            if (d > 8.0) { ax = (dx/d)*PLAYER_ACCEL*1.05; ay = (dy/d)*PLAYER_ACCEL*1.05; }
-            move_footballer(f, ax, ay, dt);
+            if (d > 8.0) {
+                ax = (dx/d)*PLAYER_ACCEL*1.05;
+                ay = (dy/d)*PLAYER_ACCEL*1.05;
+                f->angle_rad = atan2(ay, ax);
+            }
+            move_footballer(f, ax, ay, dt, 1.0);
         }
 
         // Kick decisions
@@ -817,7 +816,7 @@ void ai_footballer(int idx, double dt){
                     if (i == idx) continue;
                     struct footballer_data* recv = &footballers[i];
                     double dr = sqrt(pow(recv->x - f->x, 2) + pow(recv->y - f->y, 2));
-                    if (dr < 140.0) continue; // too close
+                    if (dr < 140.0) continue;
 
                     double dtg   = sqrt(pow(enemy_gx - recv->x, 2) + pow(enemy_gy - recv->y, 2));
                     double score = 1000.0 - dtg;
@@ -854,6 +853,7 @@ void ai_footballer(int idx, double dt){
         }
     }
 }
+
 
 // -------------------------------------------------------
 // GOAL CHECK
