@@ -15,12 +15,13 @@ p1:
 move: wasd
 kick (hold): space
 change teammate: left shift
+boost: ctrl left
 
 p2:
 move: arrow key
 kick (hold): n
 change teammate: m
-
+boost: shift right
 
 
 ```
