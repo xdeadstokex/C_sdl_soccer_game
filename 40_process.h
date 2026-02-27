@@ -9,13 +9,6 @@
 
 static double last_proc_time = 0;
 
-// Edge-detection state (previous frame key state)
-static int tab_last   = 0;
-static int m_last     = 0;
-static int space_last = 0;
-static int n_last     = 0;
-static int esc_last   = 0;
-
 // Menu button geometry — MUST match draw_menu() in 51_render_helper.h exactly.
 // Buttons are screen-coord rectangles centered horizontally.
 // PvA: top-left y = window.h/2 - 80,  height 50
@@ -32,9 +25,6 @@ void process(){
     if(dt > 0.1) dt = 0.1;
     last_proc_time = now;
 
-    // ESC edge
-    int esc_clicked = window.key_escape && !esc_last;
-    esc_last = window.key_escape;
 
     // --------------------------------------------------
     // MENU
@@ -73,7 +63,7 @@ void process(){
     // --------------------------------------------------
     // BACK TO MENU: ESC or click back button
     // --------------------------------------------------
-    if(esc_clicked){
+    if(kb.key_escape.click){
         game_mode = MODE_MENU;
         reset_positions();
         return;
@@ -93,17 +83,6 @@ void process(){
     // --------------------------------------------------
     if(game.goal_cooldown > 0){ game.goal_cooldown--; return; }
 
-    // --------------------------------------------------
-    // EDGE DETECTION
-    // --------------------------------------------------
-    int tab_clicked    = window.key_tab    && !tab_last;
-    int m_clicked      = window.key_m      && !m_last;
-    int space_released = !window.key_space && space_last;
-    int n_released     = !window.key_n     && n_last;
-    tab_last   = window.key_tab;
-    m_last     = window.key_m;
-    space_last = window.key_space;
-    n_last     = window.key_n;
 
     // --------------------------------------------------
     // TEAM 0 (RED): WASD + SPACE + TAB
@@ -115,10 +94,10 @@ void process(){
         // Thêm role 3 vào vòng lặp next
         int next = (idx == 0) ? 1 : (idx == 1) ? 2 : (idx == 2) ? 3 : 0;
         handle_human(idx,
-            window.key_a, window.key_d,
-            window.key_w, window.key_s,
-            window.key_space, space_released,
-            tab_clicked,
+            kb.key_a.hold, kb.key_d.hold,
+            kb.key_w.hold, kb.key_s.hold,
+            kb.key_space.hold, kb.key_space.unclick,
+            kb.key_shift_l.click,
             &team0_active, next,
             dt);
         // Non-active red field players (từ 0 đến 3)
@@ -138,10 +117,10 @@ void process(){
         // Logic next cho index 5, 6, 7, 8
         int next = (idx == 5) ? 6 : (idx == 6) ? 7 : (idx == 7) ? 8 : 5;
         handle_human(idx,
-            window.key_arrow_left, window.key_arrow_right,
-            window.key_arrow_up,   window.key_arrow_down,
-            window.key_n, n_released,
-            m_clicked,
+            kb.key_arrow_left.hold, kb.key_arrow_right.hold,
+            kb.key_arrow_up.hold,   kb.key_arrow_down.hold,
+            kb.key_n.hold, kb.key_n.unclick,
+            kb.key_m.click,
             &team1_active, next,
             dt);
         
