@@ -64,6 +64,7 @@ struct dust_particle {
 struct game_data {
     int score_red;
     int score_blue;
+    int match_time;
     int goal_cooldown;  // frames to freeze after goal
 };
 

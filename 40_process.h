@@ -37,6 +37,7 @@ void process(){
             if(mx > bx && mx < bx + MENU_BTN_W){
                 if(my > menu_pva_y() && my < menu_pva_y() + MENU_BTN_H){
                     game_mode = MODE_PVA;
+                    game.match_time = 4800.0;
                     reset_positions();
                     printf("Mode: Player vs AI\n");
 
@@ -45,6 +46,8 @@ void process(){
                 }
                 if(my > menu_pvp_y() && my < menu_pvp_y() + MENU_BTN_H){
                     game_mode = MODE_PVP;
+                    game.match_time = 4800.0;
+
                     reset_positions();
                     printf("Mode: Player vs Player\n");
 
@@ -121,7 +124,18 @@ void process(){
     } else {
         for(int i = 5; i < NUM_FOOTBALLERS; i++) ai_footballer(i, dt);
     }
-
+    //timer
+    if(game_mode == MODE_PVA || game_mode == MODE_PVP) {
+        if(game.match_time > 0) {
+            game.match_time -= dt;
+        } else {
+            game.match_time = 0;
+            game_mode = MODE_MENU;
+            stop_sound(&bgm_match);
+            play_sound_loop(&bgm_menu);
+            reset_positions();
+        }
+    }
     // --------------------------------------------------
     // PHYSICS
     // --------------------------------------------------

@@ -158,6 +158,29 @@ void move_footballer(struct footballer_data* f, double accel_x, double accel_y, 
     if(f->x > window.w - f->r) { f->x = window.w - f->r;   f->vx = -fabs(f->vx)*0.3; }
     if(f->y < f->r)            { f->y = f->r;              f->vy =  fabs(f->vy)*0.3; }
     if(f->y > window.h - f->r) { f->y = window.h - f->r;   f->vy = -fabs(f->vy)*0.3; }
+
+    // add collider
+    double goal_top = goals[0].y;
+    double goal_bottom = goals[0].y + goals[0].h;
+    //left goal
+    if (f->x - f->r < goals[0].w) { 
+        if (fabs(f->y - goal_top) < f->r || fabs(f->y - goal_bottom) < f->r) {
+             if (f->y < goal_top || f->y > goal_bottom) {
+             } else {
+                 f->x = goals[0].w + f->r;
+                 f->vx = 0;
+             }
+        }
+    }
+    //right goal
+    if (f->x + f->r > window.w - goals[1].w) {
+        if (fabs(f->y - goal_top) < f->r || fabs(f->y - goal_bottom) < f->r) {
+             if (f->y >= goal_top && f->y <= goal_bottom) {
+                 f->x = window.w - goals[1].w - f->r;
+                 f->vx = 0;
+             }
+        }
+    }
 }
 
 
@@ -233,17 +256,30 @@ void update_ball_dt(double dt){
     if(ball.y - ball.r < 0)          { ball.y = ball.r;            ball.vy =  fabs(ball.vy)*0.7; }
     if(ball.y + ball.r > window.h)   { ball.y = window.h - ball.r; ball.vy = -fabs(ball.vy)*0.7; }
 
-    // Left / right wall bounce — only outside goal opening
-    double gt0 = goals[0].y, gb0 = goals[0].y + goals[0].h;
-    double gt1 = goals[1].y, gb1 = goals[1].y + goals[1].h;
-    if(ball.x - ball.r < 0){
-        if(ball.y < gt0 || ball.y > gb0){
-            ball.x = ball.r; ball.vx = fabs(ball.vx)*0.7;
+    double gt = goals[0].y;          
+    double gb = goals[0].y + goals[0].h; 
+    double gw = goals[0].w;          
+
+
+    if(ball.x - ball.r < gw) {
+        if(ball.y < gt || ball.y > gb) {
+            ball.x = gw + ball.r;
+            ball.vx = fabs(ball.vx) * 0.7;
+        } 
+        else if (fabs(ball.y - gt) < ball.r || fabs(ball.y - gb) < ball.r) {
+            ball.vx = fabs(ball.vx) * 0.8;
+            ball.vy = -ball.vy * 0.8;    
         }
     }
-    if(ball.x + ball.r > window.w){
-        if(ball.y < gt1 || ball.y > gb1){
-            ball.x = window.w - ball.r; ball.vx = -fabs(ball.vx)*0.7;
+
+    if(ball.x + ball.r > window.w - gw) {
+        if(ball.y < gt || ball.y > gb) {
+            ball.x = window.w - gw - ball.r;
+            ball.vx = -fabs(ball.vx) * 0.7;
+        }
+        else if (fabs(ball.y - gt) < ball.r || fabs(ball.y - gb) < ball.r) {
+            ball.vx = -fabs(ball.vx) * 0.8;
+            ball.vy = -ball.vy * 0.8;
         }
     }
 }
