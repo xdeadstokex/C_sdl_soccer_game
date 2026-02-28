@@ -708,43 +708,101 @@ void ai_footballer(int idx, double dt){
 
         if (is_attacking) {
             if (ball.owner == idx) {
+                // 1. Mặc định là dẫn bóng hướng thẳng về gôn địch
                 target_x = enemy_gx;
                 target_y = enemy_gy;
-            } else {
-                int my_index = (f->team == 0) ? idx : (idx - 5);
-                int ball_owner_index = -1;
-                if (ball.owner >= 0 && footballers[ball.owner].team == f->team)
-                    ball_owner_index = (f->team == 0) ? ball.owner : (ball.owner - 5);
+                
+                //tìm kẻ địch gần nhất
+                double closest_enemy_dist = 9999.0;
+                struct footballer_data* closest_enemy = NULL;
+                
+                for (int i = 0; i < NUM_FOOTBALLERS; i++) {
+                    if (footballers[i].team != f->team) {
+                        double dist = sqrt(pow(footballers[i].x - f->x, 2) + pow(footballers[i].y - f->y, 2));
+                        if (dist < closest_enemy_dist) {
+                            closest_enemy_dist = dist;
+                            closest_enemy = &footballers[i];
+                        }
+                    }
+                }
+                
+                //né trường hợp dính nhau
+                if (closest_enemy != NULL && closest_enemy_dist < 45.0) {
+                    double gdx = enemy_gx - f->x;
+                    double gdy = enemy_gy - f->y;
+                    double g_len = sqrt(gdx*gdx + gdy*gdy);
+                    if (g_len > 0.001) { gdx /= g_len; gdy /= g_len; }
 
-                int relative_role = 0, role_counter = 0;
-                for (int i = 0; i < 5; i++) {
-                    if (i == ball_owner_index) continue;
-                    if (i == my_index) { relative_role = role_counter; break; }
-                    role_counter++;
+                    double perp_x = -gdy;
+                    double perp_y =  gdx;
+
+                    double dot = perp_x * (closest_enemy->x - f->x) + perp_y * (closest_enemy->y - f->y);
+                    if (dot > 0) { perp_x = -perp_x; perp_y = -perp_y; }
+
+                    double blend_x = gdx * 0.5 + perp_x * 0.5;
+                    double blend_y = gdy * 0.5 + perp_y * 0.5;
+                    double b_len = sqrt(blend_x*blend_x + blend_y*blend_y);
+                    if (b_len > 0.001) {
+                        target_x = f->x + (blend_x / b_len) * 120.0;
+                        target_y = f->y + (blend_y / b_len) * 120.0;
+                    }
+                }
+            } 
+            else{
+                //tìm cầu thủ gần nhất
+                double my_dist = sqrt(pow(f->x - ball.x, 2) + pow(f->y - ball.y, 2));
+                int rank = 0;
+                int start_idx = (f->team == 0) ? 0 : 5;
+                int end_idx   = (f->team == 0) ? 3 : 8;
+                for (int i = start_idx; i <= end_idx; i++) {
+                    if (i == idx) continue;
+                    double od = sqrt(pow(footballers[i].x - ball.x, 2) + pow(footballers[i].y - ball.y, 2));
+                    if (od < my_dist || (od == my_dist && i < idx)) rank++;
                 }
 
-                double attack_dir = (f->team == 0) ? 1.0 : -1.0;
-                double carrier_x  = (ball.owner >= 0) ? footballers[ball.owner].x : ball.x;
+                //bóng gần mình
+                if (ball.owner == -1 && rank == 0) {
+                    target_x = ball.x + ball.vx * 0.3;
+                    target_y = ball.y + ball.vy * 0.3;
+                } 
+                //trường hợp chạy chỗ
+                else {
+                    int my_index = (f->team == 0) ? idx : (idx - 5);
+                    int ball_owner_index = -1;
+                    if (ball.owner >= 0 && footballers[ball.owner].team == f->team)
+                        ball_owner_index = (f->team == 0) ? ball.owner : (ball.owner - 5);
 
-                if (relative_role == 0) {
-                    target_x = carrier_x + attack_dir * 220.0;
-                    target_y = enemy_gy;
-                } else if (relative_role == 1) {
-                    target_x = carrier_x + attack_dir * 160.0;
-                    target_y = (ball.y <= window.h/2.0) ? (window.h - 90.0) : 90.0;
-                } else if (relative_role == 2) {
-                    target_x = carrier_x - attack_dir * 60.0;
-                    target_y = (ball.y <= window.h/2.0) ? 90.0 : (window.h - 90.0);
-                } else {
-                    target_x = carrier_x - attack_dir * 180.0;
-                    target_y = window.h / 2.0;
+                    int relative_role = 0, role_counter = 0;
+                    for (int i = 0; i < 4; i++) {
+                        if (i == ball_owner_index) continue;
+                        if (i == my_index) { relative_role = role_counter; break; }
+                        role_counter++;
+                    }
+
+                    double attack_dir = (f->team == 0) ? 1.0 : -1.0;
+                    double carrier_x  = (ball.owner >= 0) ? footballers[ball.owner].x : ball.x;
+
+                    if (relative_role == 0) {
+                        target_x = carrier_x + attack_dir * 220.0;
+                        target_y = enemy_gy;
+                    } else if (relative_role == 1) {
+                        target_x = carrier_x + attack_dir * 160.0;
+                        target_y = (ball.y <= window.h/2.0) ? (window.h - 90.0) : 90.0;
+                    } else if (relative_role == 2) {
+                        target_x = carrier_x - attack_dir * 60.0;
+                        target_y = (ball.y <= window.h/2.0) ? 90.0 : (window.h - 90.0);
+                    } else {
+                        target_x = carrier_x - attack_dir * 180.0;
+                        target_y = window.h / 2.0;
+                    }
+
+                    double offside_line = enemy_gx - attack_dir * 80.0;
+                    if (f->team == 0 && target_x > offside_line) target_x = offside_line;
+                    if (f->team == 1 && target_x < offside_line) target_x = offside_line;
                 }
-
-                double offside_line = enemy_gx - attack_dir * 80.0;
-                if (f->team == 0 && target_x > offside_line) target_x = offside_line;
-                if (f->team == 1 && target_x < offside_line) target_x = offside_line;
             }
-        } else {
+        }
+        else {
             // DEFEND
             double this_dist = sqrt(pow(f->x - ball.x, 2) + pow(f->y - ball.y, 2));
             int rank = 0;
@@ -781,25 +839,27 @@ void ai_footballer(int idx, double dt){
             if (d > 8.0) {
                 ax = (dx/d)*PLAYER_ACCEL*1.05;
                 ay = (dy/d)*PLAYER_ACCEL*1.05;
-                f->angle_rad = atan2(ay, ax);
+                
+                //xoay mặt nhìn bóng
+                if (is_attacking && ball.owner != idx) {
+                    f->angle_rad = atan2(ball.y - f->y, ball.x - f->x);
+                } else {
+                    f->angle_rad = atan2(ay, ax);
+                }
+            } else {
+                if (is_attacking && ball.owner != idx) {
+                    f->angle_rad = atan2(ball.y - f->y, ball.x - f->x);
+                }
             }
             move_footballer(f, ax, ay, dt, 1.0);
         }
 
-        // Kick decisions
+        //sút
         if (ball.owner == idx) {
             ai_kick_timer[idx] -= dt;
 
-            int under_pressure = 0;
-            for (int e = 0; e < NUM_FOOTBALLERS; e++) {
-                if (footballers[e].team == f->team) continue;
-                double ed = sqrt(pow(footballers[e].x - f->x, 2) + pow(footballers[e].y - f->y, 2));
-                if (ed < 65.0) { under_pressure = 1; break; }
-            }
-            if (under_pressure) ai_kick_timer[idx] = 0;
-
             double dist_to_goal = sqrt(pow(enemy_gx - f->x, 2) + pow(enemy_gy - f->y, 2));
-            int can_shoot = (dist_to_goal < 160.0);
+            int can_shoot = (dist_to_goal < 200.0);
 
             if (can_shoot && ai_kick_timer[idx] <= 0) {
                 double spread = ((double)rand()/RAND_MAX - 0.5) * 0.25;
@@ -807,10 +867,13 @@ void ai_footballer(int idx, double dt){
                 kick_ball(idx, 0.8 + ((double)rand()/RAND_MAX) * 0.2);
                 ai_kick_timer[idx] = KICK_COOLDOWN + 0.2;
             } else if (ai_kick_timer[idx] <= 0) {
+                //tìm người hoặc đập tường
                 int best_teammate = -1;
                 double best_score = -999.0;
+                int best_is_wall_pass = 0; // 0: Chuyền thẳng, 1: Đập tường trên, 2: Đập tường dưới
+                
                 int start_idx = (f->team == 0) ? 0 : 5;
-                int end_idx   = (f->team == 0) ? 4 : 9;
+                int end_idx   = (f->team == 0) ? 3 : 8;
 
                 for (int i = start_idx; i <= end_idx; i++) {
                     if (i == idx) continue;
@@ -822,39 +885,77 @@ void ai_footballer(int idx, double dt){
                     double score = 1000.0 - dtg;
                     if (dr > 500.0) score -= 500.0;
 
+                    int is_blocked = 0;
                     for (int e = 0; e < NUM_FOOTBALLERS; e++) {
                         if (footballers[e].team != f->team) {
                             if (is_pass_blocked(f->x, f->y, recv->x, recv->y,
-                                                footballers[e].x, footballers[e].y,
-                                                footballers[e].r + 25)) {
-                                score -= 2000.0; break;
+                                                footballers[e].x, footballers[e].y, footballers[e].r + 25)) {
+                                is_blocked = 1; break;
                             }
                         }
                     }
-                    if (score > best_score) { best_score = score; best_teammate = i; }
+                    
+                    int wall_pass_type = 0;
+                    if (is_blocked) {
+                        //tính toán đập tường khi bị block chuyền thẳng
+                        if (recv->y < window.h / 3.0) {
+                            wall_pass_type = 1; 
+                            score -= 200.0;
+                        } else if (recv->y > window.h * 2.0 / 3.0) {
+                            wall_pass_type = 2; 
+                            score -= 200.0;
+                        } else {
+                            score -= 2000.0;
+                        }
+                    }
+
+                    if (score > best_score) { 
+                        best_score = score; 
+                        best_teammate = i; 
+                        best_is_wall_pass = wall_pass_type;
+                    }
                 }
 
+                //truyền đón đầu
                 if (best_teammate >= 0 && best_score > 0) {
                     struct footballer_data* recv = &footballers[best_teammate];
+                    
                     double pass_charge   = 0.4;
+                    if (best_is_wall_pass) pass_charge = 0.65; 
+
                     double pass_speed    = KICK_POWER_MIN + (KICK_POWER_MAX - KICK_POWER_MIN) * pass_charge;
                     double pass_dist     = sqrt(pow(recv->x - f->x, 2) + pow(recv->y - f->y, 2));
+                    if (best_is_wall_pass) pass_dist *= 1.4;
+                    
                     double ttr           = pass_dist / pass_speed;
-                    f->angle_rad = atan2(recv->y + recv->vy*ttr - f->y,
-                                         recv->x + recv->vx*ttr - f->x);
+                    
+                    double lead_x = recv->x + recv->vx * ttr;
+                    double lead_y = recv->y + recv->vy * ttr;
+                    
+                    double aim_x = lead_x;
+                    double aim_y = lead_y;
+                    
+                    if (best_is_wall_pass == 1) {
+                        aim_y = 0.0 - (lead_y / 0.7); 
+                    } else if (best_is_wall_pass == 2) {
+                        aim_y = window.h + ((window.h - lead_y) / 0.7);
+                    }
+                    
+                    double wind_accel_x = wind.vx * 6.0; 
+                    double wind_accel_y = wind.vy * 6.0;
+                    double drift_x = 0.5 * wind_accel_x * ttr * ttr;
+                    double drift_y = 0.5 * wind_accel_y * ttr * ttr;
+                    
+                    f->angle_rad = atan2(aim_y - drift_y - f->y, aim_x - drift_x - f->x);
                     kick_ball(idx, pass_charge);
                     ai_kick_timer[idx] = KICK_COOLDOWN + 0.5;
-                } else if (under_pressure) {
-                    f->angle_rad = atan2(enemy_gy - f->y, enemy_gx - f->x);
-                    kick_ball(idx, 0.7);
-                    ai_kick_timer[idx] = KICK_COOLDOWN;
                 }
             }
         }
     }
 }
 
-
+ 
 // -------------------------------------------------------
 // GOAL CHECK
 // Returns 1 if red scores (ball in left goal),
