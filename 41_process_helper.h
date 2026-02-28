@@ -390,7 +390,7 @@ void handle_human(int idx,
     struct footballer_data* f = &footballers[idx];
 
     // Rotate left/right
-    double TURN_SPEED = 3.0; // radians/sec, tune
+    double TURN_SPEED = 6.0; // radians/sec, tune
     if(left)  f->angle_rad += TURN_SPEED * dt;
     if(right) f->angle_rad -= TURN_SPEED * dt;
 
