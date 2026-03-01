@@ -1,0 +1,29 @@
+[33mdb290f2[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m merging
+[33mebc555f[m[33m ([m[1;31morigin/scoreupdate[m[33m, [m[1;32mscoreupdate[m[33m)[m meo
+[33ma9fe879[m make TURN_SPEED faster
+[33ma4b7059[m ai fix
+[33mcb3e9c0[m boost des
+[33mf2ebccf[m movement-n-collision-change
+[33mb5c6640[m as named
+[33m6b712a1[m demo ai footballer
+[33md6d7745[m demo ai footballer
+[33m5cda17e[m fix key signal "stuck"
+[33m3c5f737[m  working on ai
+[33m144faa5[m working on ai
+[33m9064eb4[m fix sound, correctly use sound, correctly init sdl
+[33md1caf40[m change p1 teammate switch key
+[33m8a16696[m correctly use img func
+[33ma470a36[m update control signal
+[33m9332123[m working on ai
+[33m6fa0c13[m working on ai player
+[33mfd4d64d[m[33m ([m[1;31morigin/menu_and_sound_update[m[33m, [m[1;32mmenu_and_sound_update[m[33m)[m hihi
+[33m2d48f52[m add more footballer
+[33mff7b5e7[m rahhhhhhh wrong file to upload
+[33m6f7ec64[m goalkeeper behavior update
+[33m0cf0932[m add game des and some info
+[33m6bdb794[m update external lib
+[33mbdcf37c[m main logic change v1
+[33m09def6a[m add dependency des
+[33mf3d3a4b[m add guide to compile in  window
+[33md0fd5b2[m first upload
+[33me52b8b2[m Initial commit

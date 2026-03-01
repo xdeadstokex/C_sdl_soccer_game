@@ -332,32 +332,51 @@ void draw_menu(){
 	draw_img(&window, &mu,  150 - logo_size/2, 350 - logo_size/2);
 	draw_img(&window, &mc,  1050 - logo_size/2, 350 - logo_size/2);
 
-    // Controls hint
-    int hx = cx - 180, hy = window.h/2 + 90;
-    draw_rect(&window, cx - 200, hy - 10, 400, 40, 0x00000077);
-    draw_rect(&window, hx,     hy, 20, 12, 0xFF4444FF); // WASD
-    draw_rect(&window, hx+25,  hy, 20, 12, 0xFF8844FF); // SPACE
-    draw_rect(&window, hx+50,  hy, 20, 12, 0xFFAA00FF); // TAB
-    draw_rect(&window, hx+120, hy, 20, 12, 0x4466FFFF); // ARROWS
-    draw_rect(&window, hx+145, hy, 20, 12, 0x44AAFFFF); // N
-    draw_rect(&window, hx+170, hy, 20, 12, 0x22CCFFFF); // M
 }
-
-
 // -------------------------------------------------------
 // IN-GAME CONTROLS HINT (bottom-left)
 // -------------------------------------------------------
 void draw_controls_hint(){
-    int bx = 8, by = window.h - 52;
-    draw_rect(&window, bx, by, 210, 44, 0x00000077);
-    draw_rect(&window, bx+4,  by+6, 16, 10, 0xFF4444FF); // WASD
-    draw_rect(&window, bx+24, by+6, 16, 10, 0xFF8844FF); // SPACE
-    draw_rect(&window, bx+44, by+6, 16, 10, 0xFFAA00FF); // TAB
-    if(game_mode == MODE_PVP){
-        draw_rect(&window, bx+80,  by+6, 16, 10, 0x4466FFFF); // ARROWS
-        draw_rect(&window, bx+100, by+6, 16, 10, 0x44AAFFFF); // N
-        draw_rect(&window, bx+120, by+6, 16, 10, 0x22CCFFFF); // M
-    }
 }
+void draw_timeup_board() {
+    int cx = window.w / 2;
+    int cy = window.h / 2;
+    float logo_scale = 0.2f;
 
+    // 2. Vẽ bảng nền chính (Nếu ảnh timeup.png của bạn chỉ là chữ, bạn vẫn nên giữ cái khung này)
+    draw_rect_centered(&window, cx, cy, 320, 220, 0x222222FF); 
+    draw_rect_centered(&window, cx, cy, 310, 210, 0x111111FF); 
+
+    // 3. VẼ ẢNH "TIME UP" (Thay cho thanh đỏ cũ)
+    // Giả sử ảnh chữ "TIME UP" đặt ở phía trên của bảng
+    draw_img_scaled(&window, &mu, cx - 140, cy - 35, logo_scale, logo_scale);
+    
+    // Logo MC bên phải
+    draw_img_scaled(&window, &mc, cx + 85, cy - 35, logo_scale, logo_scale);
+    draw_img_centered(&window, &timeup, cx, cy - 70);
+
+    // 4. Hiển thị tỉ số trận đấu (Vẽ ở giữa bảng)
+    // Đội Đỏ (MU)
+    for(int i = 0; i < game.score_red && i < 9; i++)
+        draw_rect(&window, cx + 20 + i*15, cy - 10, 12, 30, 0x4466FFFF);
+
+    // Vạch ngăn cách
+    draw_rect_centered(&window, cx, cy + 5, 4, 40, 0xFFFFFFCC);
+
+    // Đội Xanh (MC)
+    for(int i = 0; i < game.score_blue && i < 9; i++)
+        draw_rect(&window, cx - 30 - i*15, cy - 10, 12, 30, 0xFF4444FF);
+
+    // 5. VẼ ẢNH "BACK BUTTON" (Thay cho nút vẽ tay cũ)
+    // Tọa độ nút Back đặt ở phía dưới bảng 0x4466FFFF
+    int btn_y = cy + 65;
+    
+    // Hiệu ứng Hover: Nếu rê chuột vào thì vẽ một khung sáng nhẹ bao quanh ảnh
+    if(window.mouse_x > cx - 90 && window.mouse_x < cx + 90 && 
+       window.mouse_y > btn_y - 25 && window.mouse_y < btn_y + 25) {
+        draw_rect_centered(&window, cx, btn_y, 190, 55, 0xFFFFFF33); // Khung sáng mờ
+    }
+    
+    draw_img_centered(&window, &back_button, cx, btn_y);
+}
 #endif

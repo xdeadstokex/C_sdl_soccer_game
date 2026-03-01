@@ -91,7 +91,8 @@ int init(){
 	load_img(&window, &tex_pvp_hover, "assets/pvp.png");
 	load_img(&window, &mu, "assets/mu.png");
 	load_img(&window, &mc, "assets/mc.png");
-	
+	load_img(&window, &timeup, "assets/timeup.png");
+    load_img(&window, &back_button, "assets/back.png");
 	
 
 	load_sound(&bgm_menu, "assets/menu_theme.mp3");

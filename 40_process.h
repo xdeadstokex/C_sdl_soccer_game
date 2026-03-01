@@ -130,22 +130,41 @@ void process(){
             game.match_time -= dt;
         } else {
             game.match_time = 0;
-            game_mode = MODE_MENU;
+            game_mode = MODE_TIMEUP;
             stop_sound(&bgm_match);
             play_sound_loop(&bgm_menu);
             reset_positions();
         }
     }
+    if(game_mode == MODE_TIMEUP) {
+        if(window.mouse_click_left) {
+            int mx = window.mouse_x;
+            int my = window.mouse_y;
+            int cx = window.w / 2;
+            int cy = window.h / 2;
+
+            // Kiểm tra click vào nút "BACK TO MENU" (xem tọa độ ở phần vẽ bên dưới)
+            if(mx > cx - 80 && mx < cx + 80 && my > cy + 40 && my < cy + 80) {
+                game.score_red = 0;
+                game.score_blue = 0;
+                game_mode = MODE_MENU;
+                reset_positions();
+            }
+        }
+    }
     // --------------------------------------------------
     // PHYSICS
     // --------------------------------------------------
-    update_wind(dt);
-    spawn_dust(dt);
-    update_dust(dt);
-    resolve_player_collisions();
-    update_ball_dt(dt);
-    check_ball_attract(dt);
-    check_ball_reflect();
+    if(game_mode != MODE_TIMEUP){
+        update_wind(dt);
+        spawn_dust(dt);
+        update_dust(dt);
+        resolve_player_collisions();
+        update_ball_dt(dt);
+        check_ball_attract(dt);
+        check_ball_reflect();
+    }
+
 
     // --------------------------------------------------
     // GOAL CHECK

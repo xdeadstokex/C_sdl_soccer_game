@@ -9,7 +9,7 @@
 void render(){
     clear_screen(&window);
 
-    if(game_mode == MODE_MENU){
+    if(game_mode == MODE_MENU && game_mode != MODE_TIMEUP){
         draw_field();
         draw_menu();
     } else {
@@ -25,7 +25,9 @@ void render(){
         draw_back_button();
         draw_controls_hint();
     }
-
+    if(game_mode == MODE_TIMEUP) {
+        draw_timeup_board();
+    }
     update_screen(&window);
     cap_fps(60);
 }

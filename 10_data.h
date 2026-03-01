@@ -69,7 +69,7 @@ struct game_data {
 };
 
 // Game mode
-typedef enum { MODE_MENU = 0, MODE_PVA = 1, MODE_PVP = 2 } game_mode_t;
+typedef enum { MODE_MENU = 0, MODE_PVA = 1, MODE_PVP = 2, MODE_TIMEUP = 3} game_mode_t;
 game_mode_t game_mode;
 
 // Layout:
@@ -103,6 +103,8 @@ img_data tex_pvp_raw;
 img_data tex_pvp_hover;
 img_data mu;
 img_data mc;
+img_data timeup;
+img_data back_button;
 
 //sound
 sound_data bgm_menu;
