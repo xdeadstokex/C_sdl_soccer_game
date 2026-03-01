@@ -234,17 +234,51 @@ void draw_dust(){
 // -------------------------------------------------------
 // SCORE (top-center)
 // -------------------------------------------------------
-void draw_score(){
+void draw_score() {
     int cx = window.w / 2;
-    draw_rect(&window, cx - 80, 8, 160, 30, 0x00000099);
-    for(int i = 0; i < game.score_red  && i < 9; i++)
-        draw_rect(&window, cx - 70 + i*13,  14, 10, 18, 0xFF4444FF);
-    draw_rect(&window, cx - 3, 10, 6, 26, 0xFFFFFFCC);
+    float scale = 0.3f;
+
+    draw_rect(&window, cx - 120, 5, 240, 40, 0x000000AA);
+
+
+    draw_img_scaled(&window, &mu, cx - 135, 8, scale, scale);
+    draw_img_scaled(&window, &mc, cx + 70, 8, scale, scale);    
+
+
+    for(int i = 0; i < game.score_red && i < 9; i++)
+        draw_rect(&window, cx + 50 + i*11, 14, 8, 18, 0x4466FFFF);
+
+
+    draw_rect(&window, cx, 12, 2, 22, 0xFFFFFFCC);
+
+
     for(int i = 0; i < game.score_blue && i < 9; i++)
-        draw_rect(&window, cx + 60 - i*13, 14, 10, 18, 0x4466FFFF);
+        draw_rect(&window, cx - 60 - i*11, 14, 8, 18, 0xFF4444FF);
+
+    if (game.match_time > 0) {
+        // Giả sử thời gian bắt đầu là 90 giây
+        double max_time = 4800.0; 
+        double ratio = game.match_time / max_time;
+        if (ratio > 1.0) ratio = 1.0;
+        if (ratio < 0.0) ratio = 0.0;
+
+        int timer_full_w = 120; // Độ rộng tối đa của thanh thời gian
+        int timer_x = cx - timer_full_w / 2;
+        int timer_y = 40; // Nằm bên dưới vạch tỉ số
+
+        // Vẽ nền thanh timer (màu xám tối)
+        draw_rect(&window, timer_x, timer_y, timer_full_w, 4, 0x333333FF);
+
+        // Vẽ thanh timer chính (màu Vàng, sẽ ngắn dần)
+        int current_w = (int)(timer_full_w * ratio);
+        
+        // Hiệu ứng: Chuyển sang màu ĐỎ khi còn dưới 15 giây
+        int timer_color = (game.match_time > 15.0) ? 0xFFFF00FF : 0xFF2222FF;
+        
+        draw_rect(&window, timer_x, timer_y, current_w, 4, timer_color);
+    }
+
 }
-
-
 // -------------------------------------------------------
 // BACK BUTTON (top-left during play)
 // -------------------------------------------------------
